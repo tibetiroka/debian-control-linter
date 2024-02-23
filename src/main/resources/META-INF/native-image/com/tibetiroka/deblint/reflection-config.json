@@ -1,0 +1,11 @@
+[
+	{
+		"name": "com.tibetiroka.deblint.Configuration",
+		"allPublicFields": true,
+		"allPublicClasses": true
+	},
+	{
+		"name": "com.tibetiroka.deblint.Configuration$ConfigOptionDetails",
+		"allPublicFields": true
+	}
+]

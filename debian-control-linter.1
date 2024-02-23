@@ -1,0 +1,78 @@
+.TH debian\-control\-linter 1 "23 Feb 2024" "version 0.1"
+
+.SH NAME
+debian\-control\-linter \- a linter for various debian control files
+
+.SH SYNOPSIS
+\fBdebian\-control\-linter\fR [\fIOPTION\fR]... [\fIFILE\fR]
+
+.SH DESCRIPTION
+Verify the syntax and contents of debian control files.
+
+With no file, read from the default file of the chosen type. When file is \fB-\fR and it doesn't exist, read standard input.
+
+.SH OPTIONS
+
+.IP \fB\-h,\ \-\-help
+Output a short help message and exit.
+
+.IP \fB\-v,\ \-\-version
+Output version information and exit.
+
+.IP \fB\-l,\ \-\-list\fR\ \fIlist
+Lists all options belonging to a specific list and exit. The supported values can be queried via \fB\-\-list lists\fR.
+
+.IP \fB\-p,\ \-\-preset\fR\ \fIpreset
+Applies all configurations in a specific preset. Presets can be listed with \fB--list presets\fR. The list of configuration options enabled by each preset can be acquired via \fB--preset-info \fIpreset\fR. The default preset is \fBnormal\fR. Preset names are case-insensitive.
+
+.IP \fB\-t,\ \-\-type\fR\ \fIname
+Specifies the type of the control file to lint. The list of supported types can be queried via \fB--list types\fR. Information on these types can be acquired via \fB--type-info \fItype\fR. The default type is \fBdebian/copyright\fR. Type names are case-sensitive.
+
+.IP \fB\-\-file\fR\ \fIpath
+Specifies the file to lint. This file can also be specified by an argument after all of the options. All types also have a default file. If the file is \fB-\fR and it doesn't exist, read from standard input.
+
+.IP \fB\-\-enable\ \fIcheck[,check...]
+Enables a specific check. The list of checks can be queried via \fB--list checks\fR. Regardless of the order they are specified in, presets are always processed before individual check toggles. Information on these checks can be acquired via \fB--check-info \fIcheck\fR. Check names are case-insensitive.
+
+.IP \fB\-\-disable\ \fIcheck[,check...]
+Disables a specific check. For more details, see \fB--enable\fR.
+
+.IP \fB\-\-preset\-info\ \fIpreset
+Prints information about a specific preset, including a short description and the list of checks it enables.
+
+.IP \fB\-\-type\-info\ \fItype
+Prints information about a specific control file type, including a short description and the default file name.
+
+.IP \fB\-\-check\-info\ \fIcheck
+Prints information about a specific check.
+
+.IP \fB\-\-display\-info\ \fIcheck\fR|\fIreference\fR|\fIboth\fR|\fIneither
+Configures how error messages are displayed. Check names are displayed in square brackets before the error text, and references to the standard are displayed in angle brackets after the error body. The default value is \fBneither\fR. Display values are case-insensitive.
+
+.SH EXAMPLES
+.TP
+.BI debian\-control\-linter\ \-\-preset\ strict\ \-\-type\ debian/copyright\ your\-project/copyright
+.TP
+.PP
+Check the \fByour\-project/copyright\fR file using the strict preset.
+.TP
+.BI debian\-control\-linter\ \-\-enable\ urlForceHttps\ \-\-preset\ quirks\ -
+.TP
+.PP
+Verify the data from standard input using only the \fBurlForceHttps\fR check.
+
+.SH EXIT\ STATUS
+The exit status is 0 if no errors were detected, 1 otherwise. Warnings do not count towards these errors.
+
+If the linter itself has an error, exit code 2 is used for a 'controlled' crash and 3 for an uncontrolled crash.
+
+.SH AUTHOR
+Written by tibetiroka.
+
+.SH REPORTING\ BUGS
+Please submit bug reports at \fIhttps://github.com/tibetiroka/debian-control-linter\fR.
+
+.SH COPYRIGHT
+Copyright (c) 2024 by tibetiroka.
+
+debian-control-linter is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

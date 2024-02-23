@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+  pull_request:
+    types: [ opened, synchronize ]
+
+jobs:
+  build_linux:
+    name: Linux Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@4
+        with:
+          distribution: 'semeru'
+          java-version: '21'
+          cache: 'maven'
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compile project
+        run: mvn -B test -Pnative,portable
