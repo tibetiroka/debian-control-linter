@@ -27,7 +27,7 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compile project
-        run: mvn -B package -Pnative,portable
+        run: mvn -B package -Pnative,portable --file pom.xml
       - name: Upload jars to release
         uses: svenstaro/upload-release-action@2
         with:

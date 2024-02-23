@@ -23,4 +23,4 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compile project
-        run: mvn -B test -Pnative,portable
+        run: mvn -B test -Pnative,portable --file pom.xml
