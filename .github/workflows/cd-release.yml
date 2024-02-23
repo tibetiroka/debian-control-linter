@@ -29,21 +29,21 @@ jobs:
       - name: Compile project
         run: mvn -B package -Pnative,portable --file pom.xml
       - name: Upload jars to release
-        uses: svenstaro/upload-release-action@2
+        uses: svenstaro/upload-release-action@v2
         with:
           tag: ${{ github.ref }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/*.jar
           file_glob: true
       - name: Upload manpage to release
-        uses: svenstaro/upload-release-action@2
+        uses: svenstaro/upload-release-action@v2
         with:
           tag: ${{ github.ref }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: target/debian-control-linter.1
           file_glob: true
       - name: Upload native executable to release
-        uses: svenstaro/upload-release-action@2
+        uses: svenstaro/upload-release-action@v2
         with:
           tag: ${{ github.ref }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
