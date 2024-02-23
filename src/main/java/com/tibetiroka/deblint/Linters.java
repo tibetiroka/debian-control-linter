@@ -1090,7 +1090,7 @@ class Linters {
 		 */
 		public void lintFileStanzas(ControlFile file, Configuration config) {
 			if(config.copyrightFilePatternGenerality) {
-				ArrayList<String> previousPatterns = new ArrayList<>();
+				HashSet<String> previousPatterns = new HashSet<>();
 				for(int i = 0; i < file.getSpecs().size(); i++) {
 					StanzaSpec spec = file.getSpecs().get(i);
 					if(spec.name().equals("file stanza")) {
@@ -1101,6 +1101,9 @@ class Linters {
 						if(config.redundantFilePattern) {
 							for(int i1 = 0; i1 < currentPatterns.size(); i1++) {
 								String pat1 = currentPatterns.get(i1);
+								if(previousPatterns.contains(pat1)) {
+									Main.error("Duplicate file pattern: " + pat1, "redundantFilePattern");
+								}
 								for(int i2 = i1 + 1; i2 < currentPatterns.size(); i2++) {
 									String pat2 = currentPatterns.get(i2);
 									if(isMoreGeneric(pat1, pat2) || isMoreGeneric(pat2, pat1)) {
