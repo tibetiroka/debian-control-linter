@@ -22,6 +22,7 @@
 		<mainClass>com.tibetiroka.deblint.Main</mainClass>
 		<maven.compiler.source>21</maven.compiler.source>
 		<maven.compiler.target>21</maven.compiler.target>
+		<compiler-plugin.version>3.12.1</compiler-plugin.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jakarta-mail.version>2.1.2</jakarta-mail.version>
 		<junit.version>5.10.2</junit.version>
@@ -37,6 +38,11 @@
 	</properties>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${compiler-plugin.version}</version>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
