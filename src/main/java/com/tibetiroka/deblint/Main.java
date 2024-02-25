@@ -75,13 +75,8 @@ public class Main {
 		ERROR_COUNT++;
 		if(IS_TEST) {
 			if(check != null) {
-				try {
-					Field f = Configuration.class.getDeclaredField(check);
-					if(f.getType() != boolean.class || Modifier.isStatic(f.getModifiers()) || Modifier.isFinal(f.getModifiers())) {
-						throw new RuntimeException("Invalid field: " + f.getName());
-					}
-				} catch(Exception e) {
-					throw new RuntimeException(e);
+				if(Configuration.getChecks().stream().noneMatch(f -> f.getName().equals(check))) {
+					throw new RuntimeException("Invalid check: " + check);
 				}
 			}
 			throw new IllegalArgumentException(error);
@@ -268,20 +263,8 @@ public class Main {
 			processors.add((param, value) -> {
 				if(param.equals("--list") || param.equals("-l")) {
 					switch(value) {
-						case "presets" -> {
-							for(Field field : Configuration.class.getDeclaredFields()) {
-								if(Modifier.isStatic((field.getModifiers())) && field.getName().startsWith("PRESET_")) {
-									info(field.getName().substring("PRESET_".length()).toLowerCase());
-								}
-							}
-						}
-						case "checks" -> {
-							for(Field field : Configuration.class.getDeclaredFields()) {
-								if(!Modifier.isStatic((field.getModifiers())) && field.getType() == boolean.class) {
-									info(field.getName());
-								}
-							}
-						}
+						case "presets" -> Configuration.getPresets().forEach(f -> info(f.getName().substring("PRESET_".length()).toLowerCase()));
+						case "checks" -> Configuration.getChecks().forEach(f -> info(f.getName()));
 						case "types" -> {
 							for(ControlType type : ControlType.values()) {
 								info(type.getTypeName());
@@ -302,20 +285,23 @@ public class Main {
 			});
 			processors.add((param, value) -> {
 				if(param.equals("--preset-info")) {
-					String preset = "PRESET_" + value.toUpperCase();
+					String presetName = "PRESET_" + value.toUpperCase();
 					try {
-						Field f = Configuration.class.getDeclaredField(preset);
-						Configuration values = (Configuration) f.get(null);
-						info(values.presetDescription);
+						Field f = Configuration.getPresets().stream().filter(p -> p.getName().equals(presetName)).findAny().get();
+						Configuration preset = (Configuration) f.get(null);
+						Configuration lesserPreset = preset == Configuration.getPrecedenceList().getFirst() ? null : Configuration.getPrecedenceList().get(Configuration.getPrecedenceList().indexOf(preset) - 1);
+						info(preset.presetDescription);
 						info("Configuration values enabled for preset:");
-						for(Field field : Configuration.class.getDeclaredFields()) {
-							if(!Modifier.isStatic(field.getModifiers()) && field.getType() == boolean.class) {
-								if((Boolean) field.get(values)) {
-									info(field.getName());
+						for(Field check : Configuration.getChecks()) {
+							if((Boolean) check.get(preset)) {
+								if(lesserPreset == null || !(Boolean) check.get(lesserPreset)) {
+									info(check.getName() + " [!]");
+								} else {
+									info(check.getName());
 								}
 							}
 						}
-					} catch(ReflectiveOperationException ex) {
+					} catch(ReflectiveOperationException | NoSuchElementException ex) {
 						warn("Unknown preset: " + value);
 					}
 					System.exit(0);

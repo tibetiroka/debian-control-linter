@@ -17,8 +17,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +26,7 @@ class ConfigurationTest {
 	@Test
 	void checkExact() {
 		Configuration c = Configuration.PRESET_EXACT;
-		getCheckFields().forEach(f -> {
+		Configuration.getChecks().forEach(f -> {
 			try {
 				assertTrue((Boolean) f.get(c), f.getName());
 			} catch(IllegalAccessException e) {
@@ -37,15 +37,15 @@ class ConfigurationTest {
 
 	@Test
 	void checkPresetSeverity() {
-		Configuration[] severity = {Configuration.PRESET_QUIRKS, Configuration.PRESET_NORMAL, Configuration.PRESET_STRICT, Configuration.PRESET_EXACT};
-		for(int i = 0; i < severity.length; i++) {
+		List<Configuration> severity = Configuration.getPrecedenceList();
+		for(int i = 0; i < severity.size(); i++) {
 			final int k = i;
-			for(int j = i + 1; j < severity.length; j++) {
+			for(int j = i + 1; j < severity.size(); j++) {
 				final int k1 = j;
-				getCheckFields().forEach(f -> {
+				Configuration.getChecks().forEach(f -> {
 					try {
-						if((Boolean) f.get(severity[k])) {
-							assertTrue((Boolean) f.get(severity[k1]), f.getName());
+						if((Boolean) f.get(severity.get(k))) {
+							assertTrue((Boolean) f.get(severity.get(k1)), f.getName());
 						}
 					} catch(IllegalAccessException e) {
 						throw new RuntimeException(e);
@@ -58,7 +58,7 @@ class ConfigurationTest {
 	@Test
 	void checkQuirks() {
 		Configuration c = Configuration.PRESET_QUIRKS;
-		getCheckFields().forEach(f -> {
+		Configuration.getChecks().forEach(f -> {
 			try {
 				assertFalse((Boolean) f.get(c), f.getName());
 			} catch(IllegalAccessException e) {
@@ -80,14 +80,21 @@ class ConfigurationTest {
 		                                   })
 		                                   .map(Field::getName)
 		                                   .collect(Collectors.toCollection(HashSet::new));
-		HashSet<String> configs = getCheckFields()
-				.map(f -> f.getName())
-				.collect(Collectors.toCollection(HashSet::new));
+		HashSet<String> configs = Configuration.getChecks().stream()
+		                                       .map(Field::getName)
+		                                       .collect(Collectors.toCollection(HashSet::new));
 		assertEquals(docsFields, configs);
 	}
 
-	Stream<Field> getCheckFields() {
-		return Arrays.stream(Configuration.class.getDeclaredFields())
-		             .filter(f -> !Modifier.isStatic(f.getModifiers()) && !Modifier.isFinal(f.getModifiers()) && f.getType() == boolean.class);
+	@Test
+	void presetSeverityList() {
+		Assertions.assertEquals(Configuration.getPresets().size(), Configuration.getPrecedenceList().size());
+		Assertions.assertEquals(Configuration.getPresets().stream().map(f -> {
+			try {
+				return f.get(null);
+			} catch(IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}).collect(Collectors.toSet()), new HashSet<>(Configuration.getPrecedenceList()));
 	}
 }

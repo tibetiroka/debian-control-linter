@@ -11,6 +11,12 @@
 package com.tibetiroka.deblint;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Configuration options specify what checks are enabled and how they behave. An option with a {@code true} value means the check is enabled, not that the described behaviour is allowed.
@@ -218,6 +224,43 @@ public class Configuration implements Cloneable {
 	 */
 	private Configuration(String description) {
 		this.presetDescription = description;
+	}
+
+	/**
+	 * Gets the available checks in a configuration.
+	 *
+	 * @return The fields of the checks
+	 */
+	public static Set<Field> getChecks() {
+		HashSet<Field> fields = new HashSet<>();
+		for(Field field : Configuration.class.getDeclaredFields()) {
+			if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers()) && field.getType() == boolean.class) {
+				fields.add(field);
+			}
+		}
+		return fields;
+	}
+
+	/**
+	 * The list of presets from least strict to the most strict.
+	 */
+	public static List<Configuration> getPrecedenceList() {
+		return new ArrayList<>(List.of(PRESET_QUIRKS, PRESET_NORMAL, PRESET_STRICT, PRESET_EXACT));
+	}
+
+	/**
+	 * Gets the available configuration presets.
+	 *
+	 * @return The fields containing the presets
+	 */
+	public static Set<Field> getPresets() {
+		HashSet<Field> fields = new HashSet<>();
+		for(Field field : Configuration.class.getDeclaredFields()) {
+			if(Modifier.isStatic((field.getModifiers())) && Modifier.isFinal(field.getModifiers()) && field.getName().startsWith("PRESET_") && field.getType() == Configuration.class) {
+				fields.add(field);
+			}
+		}
+		return fields;
 	}
 
 	/**
