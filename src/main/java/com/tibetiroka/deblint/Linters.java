@@ -1025,6 +1025,7 @@ class Linters {
 		public void checkCopyrightNames(ControlFile file, Configuration config) {
 			if(config.licenseDeclarations) {
 				HashSet<String> names = new HashSet<>();
+				HashSet<String> optionalNames = new HashSet<>();
 				List<StanzaSpec> specs = file.getSpecs();
 				for(int i = 0; i < specs.size(); i++) {
 					StanzaSpec spec = specs.get(i);
@@ -1033,16 +1034,21 @@ class Linters {
 						DataField license = s.getField("License");
 						if(license != null) {
 							String shortNames = license.data().split("\\n")[0].strip();
-							if(!shortNames.equals(license.data().strip())) {
-								continue; // licenses are declared in this field -> no need for standalone stanzas
-							}
 							String[] declarations = shortNames.replace(",", "").split(" (and|or) "); // todo: handle duplicate licenses on this line with proper logic expression processing
-							for(String declaration : declarations) {
-								names.add(simpleLicenseName(declaration));
+							if(!shortNames.equals(license.data().strip())) {
+								// licenses are declared in this field -> no need for standalone stanzas
+								for(String declaration : declarations) {
+									optionalNames.add(simpleLicenseName(declaration));
+								}
+							} else {
+								for(String declaration : declarations) {
+									names.add(simpleLicenseName(declaration));
+								}
 							}
 						}
 					}
 				}
+				optionalNames.removeAll(names);
 				for(int i = 0; i < specs.size(); i++) {
 					StanzaSpec spec = specs.get(i);
 					if(spec.name().equals("stand-alone license stanza")) {
@@ -1052,7 +1058,14 @@ class Linters {
 							String shortName = license.data().split("\\n")[0].strip();
 							shortName = simpleLicenseName(shortName);
 							if(!names.remove(shortName)) {
-								Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations");
+								boolean optional = optionalNames.remove(shortName);
+								if(config.licenseDeclaredAfterExplanation && optional) {
+									Main.error("Stand-alone license stanza is not required; this license has an explanation: " + shortName, "licenseDeclaredAfterExplanation");
+								} else if(!optional) {
+									if(config.licenseDeclaredAfterExplanation) {
+										Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations");
+									}
+								}
 							}
 						}
 					}

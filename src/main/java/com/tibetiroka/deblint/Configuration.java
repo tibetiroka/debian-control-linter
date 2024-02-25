@@ -162,6 +162,8 @@ public class Configuration implements Cloneable {
 		//
 		PRESET_STRICT.customFieldNames = true;
 		PRESET_EXACT.customFieldNames = true;
+		//
+		PRESET_EXACT.licenseDeclaredAfterExplanation = true;
 	}
 
 	/**
@@ -191,6 +193,7 @@ public class Configuration implements Cloneable {
 	public boolean extraPriority;
 	public boolean fieldNameCapitalization;
 	public boolean licenseDeclarations;
+	public boolean licenseDeclaredAfterExplanation;
 	public boolean licenseName;
 	public boolean maintainerNameFullStop;
 	public boolean missingSectionOrPriority;
@@ -304,6 +307,7 @@ public class Configuration implements Cloneable {
 		public static final String extraPriority = "The use of the deprecated Priority value 'extra'.";
 		public static final String fieldNameCapitalization = "Field name that is not capitalized according to the established conventions.";
 		public static final String licenseDeclarations = "Declared licenses that are not used, or used licenses that are not declared.";
+		public static final String licenseDeclaredAfterExplanation = "A license that had an explanation every time it was used, and still has a stand-alone license stanza.";
 		public static final String licenseName = "Short license name(s) not properly formatted. When disabled, debian/copyright licenses are also not checked for 'customLicenseException'.";
 		public static final String maintainerNameFullStop = "A maintainer name that contains a full stop.";
 		public static final String missingSectionOrPriority = "A missing section or priority value in a .changes file's file list.";
