@@ -136,8 +136,6 @@ public class Configuration implements Cloneable {
 		//
 		PRESET_EXACT.sourceRedundantVersion = true;
 		//
-		PRESET_EXACT.multipleChecksums = true;
-		//
 		PRESET_EXACT.customLicenseException = true;
 		//
 		PRESET_EXACT.redundantFilePattern = true;
@@ -197,7 +195,6 @@ public class Configuration implements Cloneable {
 	public boolean licenseName;
 	public boolean maintainerNameFullStop;
 	public boolean missingSectionOrPriority;
-	public boolean multipleChecksums;
 	public boolean multipleDistributions;
 	public boolean recommendedFields;
 	public boolean redundantFilePattern;
@@ -311,7 +308,6 @@ public class Configuration implements Cloneable {
 		public static final String licenseName = "Short license name(s) not properly formatted. When disabled, debian/copyright licenses are also not checked for 'customLicenseException'.";
 		public static final String maintainerNameFullStop = "A maintainer name that contains a full stop.";
 		public static final String missingSectionOrPriority = "A missing section or priority value in a .changes file's file list.";
-		public static final String multipleChecksums = "Multiple checksum types used for the same stanza.";
 		public static final String multipleDistributions = "A Distribution field with more than one distribution specified.";
 		public static final String recommendedFields = "A recommended field that is not present in the stanza.";
 		public static final String redundantFilePattern = "A file pattern that is not necessary, because there is a more generic pattern in the same field.";

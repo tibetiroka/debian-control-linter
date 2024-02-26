@@ -180,7 +180,32 @@ public class ControlFile {
 		if(!stanzas.isEmpty()) {
 			throw new IllegalStateException("Cannot parse control file: there is already content parsed");
 		}
+		if(lines.isEmpty()) {
+			throw new IllegalArgumentException("Control file is empty");
+		}
 		lines = new ArrayList<>(lines);
+		// remove PGP signature
+		if(config.checkedType.isSupportsPgp()) {
+			if(lines.getFirst().equals("-----BEGIN PGP SIGNED MESSAGE-----")) {
+				lines.removeFirst();
+				DataField field = DataField.parseNext(lines, config);
+				if(field == null || !field.name().equalsIgnoreCase("Hash")) {
+					throw new IllegalArgumentException("Unrecognized PGP signature format");
+				}
+				while(!lines.isEmpty() && lines.getFirst().isBlank()) {
+					lines.removeFirst();
+				}
+				int end = lines.indexOf("-----BEGIN PGP SIGNATURE-----");
+				if(end == -1) {
+					throw new IllegalArgumentException("PGP signature is not present");
+				}
+				lines = lines.subList(0, end);
+			}
+		}
+		// process stanzas
+		if(lines.isEmpty()) {
+			throw new IllegalArgumentException("Control file only contains a PGP signature");
+		}
 		if(lines.removeIf(line -> line.startsWith("#"))) {
 			if(config.comments && config.checkedType != ControlType.SOURCE_PACKAGE_CONTROL) {
 				Main.error("Comments are only allowed in debian/control files", "comments", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");

@@ -322,19 +322,19 @@ class LintersTest {
 	@Test
 	public void sha1Linter() {
 		var linter = Linters.SHA1_LINTER;
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 20).toString(), Configuration.PRESET_EXACT));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 20) + " 20", Configuration.PRESET_EXACT));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 20) + " hi hello", Configuration.PRESET_EXACT));
-		assertDoesNotThrow(() -> linter.accept(new StringBuilder().repeat('a', 20) + " 100 hello", Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 40).toString(), Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().append('\n').repeat('a', 40) + " 20", Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().append('\n').repeat('a', 40) + " hi hello", Configuration.PRESET_EXACT));
+		assertDoesNotThrow(() -> linter.accept(new StringBuilder().append('\n').repeat('a', 40) + " 100 hello", Configuration.PRESET_EXACT));
 	}
 
 	@Test
 	public void sha256Linter() {
 		var linter = Linters.SHA256_LINTER;
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 32).toString(), Configuration.PRESET_EXACT));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 32) + " 20", Configuration.PRESET_EXACT));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 32) + " hi hello", Configuration.PRESET_EXACT));
-		assertDoesNotThrow(() -> linter.accept(new StringBuilder().repeat('a', 32) + " 100 hello", Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().repeat('a', 64).toString(), Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().append('\n').repeat('a', 64) + " 20", Configuration.PRESET_EXACT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept(new StringBuilder().append('\n').repeat('a', 64) + " hi hello", Configuration.PRESET_EXACT));
+		assertDoesNotThrow(() -> linter.accept(new StringBuilder().append('\n').repeat('a', 64) + " 100 hello", Configuration.PRESET_EXACT));
 	}
 
 	@Test

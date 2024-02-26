@@ -17,7 +17,7 @@ import java.util.function.BiConsumer;
  * The types of supported control files. THey each have a description for use with {@code --type-info}, and their own linter configurations.
  */
 public enum ControlType {
-	SOURCE_PACKAGE_CONTROL("debian/control", "control", "source package control file", Linters.PACKAGE_SOURCE_CONTROL_STANZAS, null), BINARY_PACKAGE_CONTROL("DEBIAN/control", "control", "binary package control file", Linters.PACKAGE_BINARY_CONTROL_STANZAS, null), COPYRIGHT("debian/copyright", "copyright", "copyright file", Linters.COPYRIGHT_STANZAS, Linters.TYPE_COPYRIGHT_LINTER), SOURCE_CONTROL(".dsc", ".dsc", "source control file", Linters.SOURCE_CONTROL_STANZAS, null), CHANGES(".changes", ".changes", "upload control file", Linters.CHANGES_STANZAS, null);
+	SOURCE_PACKAGE_CONTROL("debian/control", "control", "source package control file", Linters.PACKAGE_SOURCE_CONTROL_STANZAS, null, false), BINARY_PACKAGE_CONTROL("DEBIAN/control", "control", "binary package control file", Linters.PACKAGE_BINARY_CONTROL_STANZAS, null, false), COPYRIGHT("debian/copyright", "copyright", "copyright file", Linters.COPYRIGHT_STANZAS, Linters.TYPE_COPYRIGHT_LINTER, false), SOURCE_CONTROL(".dsc", ".dsc", "source control file", Linters.SOURCE_CONTROL_STANZAS, null, true), CHANGES(".changes", ".changes", "upload control file", Linters.CHANGES_STANZAS, null, true);
 	/**
 	 * The default location/name of control files in this type.
 	 */
@@ -38,18 +38,25 @@ public enum ControlType {
 	 * The debian standard name for this control file type.
 	 */
 	private final String typeName;
+	/**
+	 * Whether the file supports OpenPGP signatures.
+	 */
+	private final boolean supportsPgp;
 
-	private ControlType(String typeName, String defaultFile, String description, List<StanzaSpec> stanzas, BiConsumer<ControlFile, Configuration> linter) {
+	private ControlType(String typeName, String defaultFile, String description, List<StanzaSpec> stanzas, BiConsumer<ControlFile, Configuration> linter, boolean supportsPgp) {
 		this.typeName = typeName;
 		this.defaultFile = defaultFile;
 		this.description = description;
 		this.stanzas = stanzas;
 		this.linter = linter == null ? (a, b) -> {
 		} : linter;
+		this.supportsPgp = supportsPgp;
 	}
 
 	/**
 	 * The default location/name of control files in this type.
+	 *
+	 * @return {@link #defaultFile}
 	 */
 	public String getDefaultFile() {
 		return defaultFile;
@@ -57,6 +64,8 @@ public enum ControlType {
 
 	/**
 	 * The short description of this type.
+	 *
+	 * @return {@link #description}
 	 */
 	public String getDescription() {
 		return description;
@@ -64,6 +73,8 @@ public enum ControlType {
 
 	/**
 	 * The file-wide linter for this type.
+	 *
+	 * @return {@link #linter}
 	 */
 	public BiConsumer<ControlFile, Configuration> getLinter() {
 		return linter;
@@ -71,6 +82,8 @@ public enum ControlType {
 
 	/**
 	 * The list of stanzas that can appear in this type, in their expected order.
+	 *
+	 * @return {@link #stanzas}
 	 */
 	public List<StanzaSpec> getStanzas() {
 		return stanzas;
@@ -78,8 +91,19 @@ public enum ControlType {
 
 	/**
 	 * The debian standard name for this control file type.
+	 *
+	 * @return {@link #typeName}
 	 */
 	public String getTypeName() {
 		return typeName;
+	}
+
+	/**
+	 * Whether the file supports OpenPGP signatures.
+	 *
+	 * @return {@link #supportsPgp}
+	 */
+	public boolean isSupportsPgp() {
+		return supportsPgp;
 	}
 }

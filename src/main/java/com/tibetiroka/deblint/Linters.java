@@ -105,39 +105,22 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> SINGLE_ARCHITECTURE_LINTER = (s, config) -> {
-		String[] arches = s.split(" ");
-		if(config.duplicateArchitecture && arches.length > new HashSet<>(Arrays.asList(arches)).size()) {
-			Main.error("Duplicated architecture: " + s, "duplicateArchitecture");
+	protected static final BiConsumer<String, Configuration> SHA1_LINTER = (s, config) -> {
+		String[] lines = s.split("\\n");
+		if(!lines[0].isBlank()) {
+			Main.error("The first line of checksums should be empty");
 		}
-		if(config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL) {
-			if(!s.equals("all") && !s.equals("any")) {
-				if(Arrays.stream(arches).anyMatch(a -> a.equals("all") || a.equals("any"))) {
-					Main.error("'all' or 'any' must be the only entries, if present: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
-				} else {
-					ARCHITECTURE_LINTER.accept(String.join(" ", Arrays.stream(arches).filter(a -> !a.equals("all")).toList()), config);
-				}
+		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
+			String[] parts = l.split(" ", 3);
+			if(parts.length < 3) {
+				Main.error("Missing parameter; 3 values required: " + l);
+				return;
 			}
-		} else if(config.checkedType == ControlType.SOURCE_CONTROL) {
-			if(Arrays.asList(arches).contains("any")) {
-				if(!Arrays.stream(arches).allMatch(a -> a.equals("any") || a.equals("all"))) {
-					Main.error("When 'any' is present in a list, the only other value allowed is 'all': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
-				}
-			} else {
-				ARCHITECTURE_LINTER.accept(String.join(" ", Arrays.stream(arches).filter(a -> !a.equals("all")).toList()), config);
+			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
+				Main.error("Invalid SHA hash: " + parts[0]);
 			}
-		} else if(config.checkedType == ControlType.CHANGES) {
-			ArrayList<String> archList = new ArrayList<>(Arrays.asList(arches));
-			HashSet<String> archSet = new HashSet<>(archList);
-			archSet.remove("source");
-			if(archSet.contains("any") || archSet.stream().anyMatch(a -> a.startsWith("any-") || a.endsWith("-any"))) {
-				Main.error("Architecture wildcards are not allowed in .changes files: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
-			} else {
-				ARCHITECTURE_LINTER.accept(String.join(" ", archSet), config);
-			}
-		} else {
-			ARCHITECTURE_LINTER.accept(s, config);
-		}
+			SIZE_LINTER.accept(parts[1], config);
+		});
 	};
 	protected static final BiConsumer<String, Configuration> BINARY_LIST_LINTER = (s, config) -> {
 		HashSet<String> files = new HashSet<>();
@@ -426,27 +409,57 @@ class Linters {
 			Main.error("Invalid size: " + s);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> SHA1_LINTER = (s, config) -> {
-		String[] parts = s.split(" ", 3);
-		if(parts.length < 3) {
-			Main.error("Missing parameter; 3 values required: " + s);
-			return;
-		}
-		if(!Pattern.matches("^[a-fA-F0-9]{20}$", parts[0])) {
-			Main.error("Invalid SHA hash: " + parts[0]);
-		}
-		SIZE_LINTER.accept(parts[1], config);
-	};
 	protected static final BiConsumer<String, Configuration> SHA256_LINTER = (s, config) -> {
-		String[] parts = s.split(" ", 3);
-		if(parts.length < 3) {
-			Main.error("Missing parameter; 3 values required: " + s);
-			return;
+		String[] lines = s.split("\n");
+		if(!lines[0].isBlank()) {
+			Main.error("The first line of checksums should be empty");
 		}
-		if(!Pattern.matches("^[a-fA-F0-9]{32}$", parts[0])) {
-			Main.error("Invalid SHA-256 hash: " + parts[0]);
+		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
+			String[] parts = l.split(" ", 3);
+			if(parts.length < 3) {
+				Main.error("Missing parameter; 3 values required: " + l);
+				return;
+			}
+			if(!Pattern.matches("^[a-fA-F0-9]{64}$", parts[0])) {
+				Main.error("Invalid SHA hash: " + parts[0]);
+			}
+			SIZE_LINTER.accept(parts[1], config);
+		});
+	};
+	protected static final BiConsumer<String, Configuration> SINGLE_ARCHITECTURE_LINTER = (s, config) -> {
+		ArrayList<String> arches = new ArrayList<>(List.of(s.split(" ")));
+		if(config.duplicateArchitecture && arches.size() > new HashSet<>(arches).size()) {
+			Main.error("Duplicated architecture: " + s, "duplicateArchitecture");
 		}
-		SIZE_LINTER.accept(parts[1], config);
+		if(config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL) {
+			if(!s.equals("all") && !s.equals("any")) {
+				if(arches.stream().anyMatch(a -> a.equals("all") || a.equals("any"))) {
+					Main.error("'all' or 'any' must be the only entries, if present: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+				} else {
+					ARCHITECTURE_LINTER.accept(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), config);
+				}
+			}
+		} else if(config.checkedType == ControlType.SOURCE_CONTROL) {
+			if(arches.contains("any")) {
+				if(!arches.stream().allMatch(a -> a.equals("any") || a.equals("all"))) {
+					Main.error("When 'any' is present in a list, the only other value allowed is 'all': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+				}
+			} else {
+				ARCHITECTURE_LINTER.accept(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), config);
+			}
+		} else if(config.checkedType == ControlType.CHANGES) {
+			HashSet<String> archSet = new HashSet<>(arches);
+			archSet.remove("source");
+			if(archSet.contains("any") || archSet.stream().anyMatch(a -> a.startsWith("any-") || a.endsWith("-any"))) {
+				Main.error("Architecture wildcards are not allowed in .changes files: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+			} else {
+				if(!archSet.isEmpty()) {
+					ARCHITECTURE_LINTER.accept(String.join(" ", archSet), config);
+				}
+			}
+		} else {
+			ARCHITECTURE_LINTER.accept(s, config);
+		}
 	};
 	protected static final BiConsumer<String, Configuration> FILE_LIST_LINTER = (s, config) -> {
 		String[] lines = s.split("\\n");
@@ -507,7 +520,7 @@ class Linters {
 	};
 	protected static final BiConsumer<String, Configuration> STANDARDS_VERSION_LINTER = (s, config) -> {
 		String[] parts = s.split("\\.");
-		int[] latest = {4, 6, 2, 0};
+		int[] latest = {4, 6, 2, 1};
 		if(parts.length < 3 || parts.length > 4) {
 			Main.error("Invalid standards version: " + s);
 		} else {
@@ -536,28 +549,20 @@ class Linters {
 		}
 		Arrays.stream(fileField.data().split("\\n")).map(String::strip).filter(f -> !f.isEmpty()).map(f -> List.of(f.split(" ")).getLast()).forEach(files::add);
 		//
-		boolean found = false;
 		for(String hashType : hashes) {
 			DataField field = s.getField(hashType);
 			if(field != null) {
-				if(config.multipleChecksums && found) {
-					Main.error("Multiple checksum fields declared: " + hashType, "multipleChecksums", "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256");
-					break;
-				}
-				found = true;
+				HashSet<String> localHashes = new HashSet<>(files);
 				Arrays.stream(field.data().split("\\n")).map(String::strip).filter(f -> !f.isEmpty()).map(f -> List.of(f.split(" ")).getLast()).forEachOrdered(f -> {
-					if(!files.contains(f)) {
-						Main.error("File is not in file list, or is already checksummed: " + f, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256");
+					if(!localHashes.contains(f)) {
+						Main.error("Checksummed file is not in file list, or is already checksummed: " + f, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256");
 					}
-					files.remove(f);
+					localHashes.remove(f);
 				});
+				if(!localHashes.isEmpty()) {
+					Main.error("File is not in checksum list: " + String.join(", ", localHashes));
+				}
 			}
-		}
-		if(!files.isEmpty()) {
-			Main.error("File is not in checksum list: " + String.join(", ", files));
-		}
-		if(!found) {
-			Main.error("At least one checksum field is required: " + String.join(" | ", hashes), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256");
 		}
 	};
 	protected static final BiConsumer<Stanza, Configuration> STANZA_DEFAULT_LINTER = (s, config) -> {
@@ -890,7 +895,7 @@ class Linters {
 			HashMap<String, FieldSpec> map = new HashMap<>();
 			map.put("Format", new FieldSpec(MANDATORY, SIMPLE, FORMAT_VERSION_LINTER));
 			map.put("Source", new FieldSpec(MANDATORY, SIMPLE, SOURCE_LINTER));
-			map.put("Binary", new FieldSpec(MANDATORY, FieldType.FOLDED, BINARY_LIST_LINTER));
+			map.put("Binary", new FieldSpec(OPTIONAL, FieldType.FOLDED, BINARY_LIST_LINTER));
 			map.put("Architecture", new FieldSpec(OPTIONAL, SIMPLE, SINGLE_ARCHITECTURE_LINTER));
 			map.put("Version", new FieldSpec(MANDATORY, SIMPLE, VERSION_LINTER));
 			map.put("Maintainer", new FieldSpec(MANDATORY, SIMPLE, ADDRESS_LINTER));
@@ -915,10 +920,10 @@ class Linters {
 			map.put("Build-Conflicts-Indep", new FieldSpec(OPTIONAL, FieldType.FOLDED, DEPENDENCY_LINTER));
 			map.put("Build-Conflicts-Arch", new FieldSpec(OPTIONAL, FieldType.FOLDED, DEPENDENCY_LINTER));
 			map.put("Package-List", new FieldSpec(RECOMMENDED, FieldType.MULTILINE, PACKAGE_LIST_LINTER));
-			map.put("Checksums-Sha1", new FieldSpec(OPTIONAL, FieldType.MULTILINE, SHA1_LINTER));
-			map.put("Checksums-Sha256", new FieldSpec(OPTIONAL, FieldType.MULTILINE, SHA256_LINTER));
+			map.put("Checksums-Sha1", new FieldSpec(MANDATORY, FieldType.MULTILINE, SHA1_LINTER));
+			map.put("Checksums-Sha256", new FieldSpec(MANDATORY, FieldType.MULTILINE, SHA256_LINTER));
 			map.put("Files", new FieldSpec(MANDATORY, FieldType.MULTILINE, FILE_LIST_LINTER));
-			StanzaSpec sourceControl = new StanzaSpec("source stanza", true, false, map, STANZA_SOURCE_CONTROL_LINTER); // todo: might be surrounded by OpenPGP signature
+			StanzaSpec sourceControl = new StanzaSpec("source stanza", true, false, map, STANZA_SOURCE_CONTROL_LINTER);
 			SOURCE_CONTROL_STANZAS.add(sourceControl);
 		}
 		{
@@ -936,10 +941,10 @@ class Linters {
 			map.put("Description", new FieldSpec(RECOMMENDED, FieldType.MULTILINE, DESCRIPTION_LINTER));
 			map.put("Closes", new FieldSpec(OPTIONAL, SIMPLE, NUMBER_LIST_LINTER));
 			map.put("Changes", new FieldSpec(MANDATORY, FieldType.MULTILINE, CHANGE_LIST_LINTER));
-			map.put("Checksums-Sha1", new FieldSpec(OPTIONAL, FieldType.MULTILINE, SHA1_LINTER));
-			map.put("Checksums-Sha256", new FieldSpec(OPTIONAL, FieldType.MULTILINE, SHA256_LINTER));
+			map.put("Checksums-Sha1", new FieldSpec(MANDATORY, FieldType.MULTILINE, SHA1_LINTER));
+			map.put("Checksums-Sha256", new FieldSpec(MANDATORY, FieldType.MULTILINE, SHA256_LINTER));
 			map.put("Files", new FieldSpec(MANDATORY, FieldType.MULTILINE, FILE_LIST_LINTER));
-			StanzaSpec change = new StanzaSpec("changes stanza", true, false, map, STANZA_SOURCE_AND_CHECKSUM_LINTER); // todo: might be surrounded by OpenPGP signature
+			StanzaSpec change = new StanzaSpec("changes stanza", true, false, map, STANZA_SOURCE_AND_CHECKSUM_LINTER);
 			CHANGES_STANZAS.add(change);
 		}
 		{
@@ -990,7 +995,7 @@ class Linters {
 					http.setInstanceFollowRedirects(true);
 					http.connect();
 					if(http.getResponseCode() < 200 || http.getResponseCode() >= 300) {
-						Main.error("URL not valid (HTTP " + http.getResponseCode() + "): " + u);
+						Main.error("URL returned invalid response code (HTTP " + http.getResponseCode() + "): " + u);
 					}
 				} else {
 					conn.connect();
