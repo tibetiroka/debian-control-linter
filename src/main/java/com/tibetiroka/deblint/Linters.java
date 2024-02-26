@@ -1118,11 +1118,15 @@ class Linters {
 						if(config.redundantFilePattern) {
 							for(int i1 = 0; i1 < currentPatterns.size(); i1++) {
 								String pat1 = currentPatterns.get(i1);
-								if(previousPatterns.contains(pat1)) {
+								String normalized = normalizePattern(pat1);
+								if(previousPatterns.contains(normalized)) {
 									Main.error("Duplicate file pattern: " + pat1, "redundantFilePattern");
 								}
 								for(int i2 = i1 + 1; i2 < currentPatterns.size(); i2++) {
 									String pat2 = currentPatterns.get(i2);
+									if(normalizePattern(pat2).equals(normalized)) {
+										Main.error("Duplicate file pattern: " + pat1 + " and " + pat2, "redundantFilePattern");
+									}
 									if(isMoreGeneric(pat1, pat2) || isMoreGeneric(pat2, pat1)) {
 										Main.error("File stanza includes redundant pattern: " + pat1 + " and " + pat2 + " cannot both be needed", "redundantFilePattern");
 									}
@@ -1136,10 +1140,24 @@ class Linters {
 								}
 							}
 						}
-						previousPatterns.addAll(currentPatterns);
+						previousPatterns.addAll(currentPatterns.stream().map(this::normalizePattern).toList());
 					}
 				}
 			}
+		}
+
+		/**
+		 * Normalizes the pattern by removing any leading path elements referring to the current directory.
+		 *
+		 * @param pattern The pattern to normalize
+		 * @return The normalized pattern
+		 */
+		public String normalizePattern(String pattern) {
+			while(pattern.startsWith("./")) {
+				pattern = pattern.substring("./".length());
+			}
+			pattern = pattern.replace("/./", "/");
+			return pattern;
 		}
 
 		/**
@@ -1149,10 +1167,7 @@ class Linters {
 		 * @return The regex pattern
 		 */
 		public Pattern toRegex(String pattern) {
-			while(pattern.startsWith("./")) {
-				pattern = pattern.substring("./".length());
-			}
-			pattern = pattern.replace("/./", "/");
+			pattern = normalizePattern(pattern);
 			if(PARSED_PATTERNS.containsKey(pattern)) {
 				return PARSED_PATTERNS.get(pattern);
 			}
