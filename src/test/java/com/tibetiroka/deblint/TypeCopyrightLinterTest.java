@@ -11,9 +11,11 @@
 package com.tibetiroka.deblint;
 
 import com.tibetiroka.deblint.Linters.TypeCopyrightLinter;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.*;
 import org.junit.jupiter.params.provider.*;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,5 +32,110 @@ public final class TypeCopyrightLinterTest {
 	public void toRegex(String pattern, String regex) {
 		Pattern p = new TypeCopyrightLinter().toRegex(pattern);
 		assertEquals(regex, p.pattern());
+	}
+
+	@Test
+	public void checkCopyrightNames() {
+		Configuration config = Configuration.PRESET_EXACT.clone();
+		config.urlExists = false;
+		// working config
+		assertDoesNotThrow(() -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: test
+				 description
+				"""));
+		// license with duplicated description
+		assertThrows(IllegalArgumentException.class, () -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: test
+				 description
+								
+				License: test
+				 license body
+				"""));
+		// same text, but now allowed
+		config.licenseDeclaredAfterExplanation = false;
+		assertDoesNotThrow(() -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: test
+				 description
+								
+				License: test
+				 license body
+				"""));
+		// missing license stanza for 'test'
+		assertThrows(IllegalArgumentException.class, () -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: test
+				"""));
+		// public domain without explanation
+		assertThrows(IllegalArgumentException.class, () -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: public-domain
+				"""));
+		// public domain declared independently
+		assertThrows(IllegalArgumentException.class, () -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: public-domain
+				 body
+								
+				License: public-domain
+				 stuff
+				"""));
+		// valid public domain
+		assertDoesNotThrow(() -> lint(config, """
+				Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+				Upstream-Name: test
+				Upstream-Contact: test <test@test.org>
+				Source: https://salsa.debian.org/debian/debmake-doc
+								
+				Files: *
+				Copyright: copyright text
+				License: public-domain
+				 description
+				"""));
+	}
+
+	private void lint(Configuration config, String text) throws Exception {
+		ControlFile file = new ControlFile(config);
+		file.parse(Arrays.asList(text.split("\\n")));
+		file.matchStanzas();
+		file.lintStanzas();
 	}
 }

@@ -180,6 +180,7 @@ public class ControlFile {
 		if(!stanzas.isEmpty()) {
 			throw new IllegalStateException("Cannot parse control file: there is already content parsed");
 		}
+		lines = new ArrayList<>(lines);
 		if(lines.removeIf(line -> line.startsWith("#"))) {
 			if(config.comments && config.checkedType != ControlType.SOURCE_PACKAGE_CONTROL) {
 				Main.error("Comments are only allowed in debian/control files", "comments", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
@@ -187,7 +188,7 @@ public class ControlFile {
 		}
 		if(config.trailingSpace) {
 			Pattern trailingSpace = Pattern.compile("[ \\t]$");
-			lines.stream().forEachOrdered(s -> {
+			lines.forEach(s -> {
 				if(trailingSpace.matcher(s).matches()) {
 					Main.error("Line has trailing whitespace: " + s.strip());
 				}

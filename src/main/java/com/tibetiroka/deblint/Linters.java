@@ -1049,6 +1049,7 @@ class Linters {
 					}
 				}
 				optionalNames.removeAll(names);
+				optionalNames.remove("public-domain");
 				for(int i = 0; i < specs.size(); i++) {
 					StanzaSpec spec = specs.get(i);
 					if(spec.name().equals("stand-alone license stanza")) {
@@ -1062,9 +1063,7 @@ class Linters {
 								if(config.licenseDeclaredAfterExplanation && optional) {
 									Main.error("Stand-alone license stanza is not required; this license has an explanation: " + shortName, "licenseDeclaredAfterExplanation");
 								} else if(!optional) {
-									if(config.licenseDeclaredAfterExplanation) {
-										Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations");
-									}
+									Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations");
 								}
 							}
 						}
