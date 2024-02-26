@@ -105,23 +105,6 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> SHA1_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n");
-		if(!lines[0].isBlank()) {
-			Main.error("The first line of checksums should be empty");
-		}
-		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
-			String[] parts = l.split(" ", 3);
-			if(parts.length < 3) {
-				Main.error("Missing parameter; 3 values required: " + l);
-				return;
-			}
-			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
-				Main.error("Invalid SHA hash: " + parts[0]);
-			}
-			SIZE_LINTER.accept(parts[1], config);
-		});
-	};
 	protected static final BiConsumer<String, Configuration> BINARY_LIST_LINTER = (s, config) -> {
 		HashSet<String> files = new HashSet<>();
 		if(config.checkedType == ControlType.SOURCE_CONTROL) {
@@ -408,6 +391,23 @@ class Linters {
 		} catch(NumberFormatException e) {
 			Main.error("Invalid size: " + s);
 		}
+	};
+	protected static final BiConsumer<String, Configuration> SHA1_LINTER = (s, config) -> {
+		String[] lines = s.split("\\n");
+		if(!lines[0].isBlank()) {
+			Main.error("The first line of checksums should be empty");
+		}
+		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
+			String[] parts = l.split(" ", 3);
+			if(parts.length < 3) {
+				Main.error("Missing parameter; 3 values required: " + l);
+				return;
+			}
+			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
+				Main.error("Invalid SHA hash: " + parts[0]);
+			}
+			SIZE_LINTER.accept(parts[1], config);
+		});
 	};
 	protected static final BiConsumer<String, Configuration> SHA256_LINTER = (s, config) -> {
 		String[] lines = s.split("\n");
