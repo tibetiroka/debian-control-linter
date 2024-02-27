@@ -1093,7 +1093,7 @@ class Linters {
 			boolean firstBetter = true;
 			for(char tester : testers) {
 				String filler = new StringBuilder().repeat(tester, first.length() + second.length() + 1).toString();
-				String secondTest = second.replaceAll("(^\\*|[^\\\\]\\*)", filler).replaceAll("(^\\?|[^\\\\]\\?)", tester + "");
+				String secondTest = second.replaceAll("(^\\*|(?<!\\\\)\\*)", filler).replaceAll("(^\\?|(?<!\\\\)\\?)", tester + "");
 				firstBetter &= p1.matcher(secondTest).matches();
 			}
 			return firstBetter;
@@ -1115,19 +1115,15 @@ class Linters {
 						Stanza s = file.getStanzas().get(i);
 						DataField field = s.getField("Files");
 						Arrays.stream(field.data().split("\\n")).map(String::trim).filter(d -> !d.isEmpty()).forEachOrdered(currentPatterns::add);
-						if(config.redundantFilePattern) {
+						if(config.redundantFilePattern || config.duplicateFilePattern) {
 							for(int i1 = 0; i1 < currentPatterns.size(); i1++) {
 								String pat1 = currentPatterns.get(i1);
 								String normalized = normalizePattern(pat1);
-								if(previousPatterns.contains(normalized)) {
-									Main.error("Duplicate file pattern: " + pat1, "redundantFilePattern");
-								}
 								for(int i2 = i1 + 1; i2 < currentPatterns.size(); i2++) {
 									String pat2 = currentPatterns.get(i2);
-									if(normalizePattern(pat2).equals(normalized)) {
-										Main.error("Duplicate file pattern: " + pat1 + " and " + pat2, "redundantFilePattern");
-									}
-									if(isMoreGeneric(pat1, pat2) || isMoreGeneric(pat2, pat1)) {
+									if(config.duplicateFilePattern && normalizePattern(pat2).equals(normalized)) {
+										Main.error("Duplicate file pattern: " + pat1 + " and " + pat2, "duplicateFilePattern");
+									} else if(config.redundantFilePattern && (isMoreGeneric(pat1, pat2) || isMoreGeneric(pat2, pat1))) {
 										Main.error("File stanza includes redundant pattern: " + pat1 + " and " + pat2 + " cannot both be needed", "redundantFilePattern");
 									}
 								}

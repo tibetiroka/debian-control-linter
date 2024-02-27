@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public final class TypeCopyrightLinterTest {
 	@ParameterizedTest
-	@CsvSource({"*,*,true", "a,*,false", "a,?,false", "*,a,true", "*,?,true", "?,*,false", "??????????,*,false", "*,??????????,true", "?,a,true", "a*a,aa?a,true", "aa?a,a*a,false"})
+	@CsvSource({"*,*,true", "a,*,false", "a,?,false", "*,a,true", "*,?,true", "?,*,false", "??????????,*,false", "*,??????????,true", "?,a,true", "a*a,aa?a,true", "aa?a,a*a,false", "images/ship/pointedstick?vanguard*,images/ship/pointedstick?vanguard*,true"})
 	public void isMoreGeneric(String a, String b, boolean result) {
 		assertEquals(result, new TypeCopyrightLinter().isMoreGeneric(a, b));
 	}

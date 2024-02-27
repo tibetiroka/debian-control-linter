@@ -162,6 +162,9 @@ public class Configuration implements Cloneable {
 		PRESET_EXACT.customFieldNames = true;
 		//
 		PRESET_EXACT.licenseDeclaredAfterExplanation = true;
+		//
+		PRESET_STRICT.duplicateFilePattern = true;
+		PRESET_EXACT.duplicateFilePattern = true;
 	}
 
 	/**
@@ -182,6 +185,7 @@ public class Configuration implements Cloneable {
 	public boolean debianInstallerSection;
 	public boolean dgitExtraData;
 	public boolean duplicateArchitecture;
+	public boolean duplicateFilePattern;
 	public boolean duplicateFiles;
 	public boolean duplicateIssueNumbers;
 	public boolean duplicatePackages;
@@ -286,7 +290,7 @@ public class Configuration implements Cloneable {
 	 */
 	public static final class ConfigOptionDetails {
 		public static final String comments = "Comments outside of debian/control files.";
-		public static final String copyrightFilePatternGenerality = "Whether more generic file patterns are declared first in copyright files. When disabled, debian/copyright file lists are not checked for for 'redundantFilePattern'.";
+		public static final String copyrightFilePatternGenerality = "Whether more generic file patterns are declared first in copyright files. When disabled, debian/copyright file lists are not checked for for 'redundantFilePattern' and 'duplicateFilePattern'.";
 		public static final String copyrightSourceStyle = "A Source field in a debian/copyright file that is not a single URL address.";
 		public static final String customFieldNames = "A user-defined field not following the naming scheme.";
 		public static final String customFields = "Fields that are not listed in the specification.";
@@ -295,6 +299,7 @@ public class Configuration implements Cloneable {
 		public static final String debianInstallerSection = "A Section field value of 'debian-installer'.";
 		public static final String dgitExtraData = "Extra data specified in a Dgit field, reserved for future expansion.";
 		public static final String duplicateArchitecture = "An Architecture field declaring the same architecture more than once.";
+		public static final String duplicateFilePattern = "A file pattern repeated within the same field.";
 		public static final String duplicateFiles = "Duplicate entry in a file list.";
 		public static final String duplicateIssueNumbers = "A Closes field with repeated issue numbers.";
 		public static final String duplicatePackages = "Duplicate entry in a package list.";
