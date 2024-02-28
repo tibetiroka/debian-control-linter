@@ -11,7 +11,6 @@
 package com.tibetiroka.deblint;
 
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * The types of supported control files. THey each have a description for use with {@code --type-info}, and their own linter configurations.
@@ -29,21 +28,21 @@ public enum ControlType {
 	/**
 	 * The file-wide linter for this type.
 	 */
-	private final BiConsumer<ControlFile, Configuration> linter;
+	private final FileLinter linter;
 	/**
 	 * The list of stanzas that can appear in this type, in their expected order.
 	 */
 	private final List<StanzaSpec> stanzas;
 	/**
-	 * The debian standard name for this control file type.
-	 */
-	private final String typeName;
-	/**
 	 * Whether the file supports OpenPGP signatures.
 	 */
 	private final boolean supportsPgp;
+	/**
+	 * The debian standard name for this control file type.
+	 */
+	private final String typeName;
 
-	private ControlType(String typeName, String defaultFile, String description, List<StanzaSpec> stanzas, BiConsumer<ControlFile, Configuration> linter, boolean supportsPgp) {
+	private ControlType(String typeName, String defaultFile, String description, List<StanzaSpec> stanzas, FileLinter linter, boolean supportsPgp) {
 		this.typeName = typeName;
 		this.defaultFile = defaultFile;
 		this.description = description;
@@ -76,7 +75,7 @@ public enum ControlType {
 	 *
 	 * @return {@link #linter}
 	 */
-	public BiConsumer<ControlFile, Configuration> getLinter() {
+	public FileLinter getLinter() {
 		return linter;
 	}
 

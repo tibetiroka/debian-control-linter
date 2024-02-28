@@ -21,19 +21,6 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.*;
 
 public final class TypeCopyrightLinterTest {
-	@ParameterizedTest
-	@CsvSource({"*,*,true", "a,*,false", "a,?,false", "*,a,true", "*,?,true", "?,*,false", "??????????,*,false", "*,??????????,true", "?,a,true", "a*a,aa?a,true", "aa?a,a*a,false", "images/ship/pointedstick?vanguard*,images/ship/pointedstick?vanguard*,true"})
-	public void isMoreGeneric(String a, String b, boolean result) {
-		assertEquals(result, new TypeCopyrightLinter().isMoreGeneric(a, b));
-	}
-
-	@ParameterizedTest
-	@CsvSource({"a,^(\\./)?a$", "hello?there.txt,^(\\./)?hello.there\\.txt$", "file(name)*,^(\\./)?file\\(name\\).*$"})
-	public void toRegex(String pattern, String regex) {
-		Pattern p = new TypeCopyrightLinter().toRegex(pattern);
-		assertEquals(regex, p.pattern());
-	}
-
 	@Test
 	public void checkCopyrightNames() {
 		Configuration config = Configuration.PRESET_EXACT.clone();
@@ -130,6 +117,19 @@ public final class TypeCopyrightLinterTest {
 				License: public-domain
 				 description
 				"""));
+	}
+
+	@ParameterizedTest
+	@CsvSource({"*,*,true", "a,*,false", "a,?,false", "*,a,true", "*,?,true", "?,*,false", "??????????,*,false", "*,??????????,true", "?,a,true", "a*a,aa?a,true", "aa?a,a*a,false", "images/ship/pointedstick?vanguard*,images/ship/pointedstick?vanguard*,true"})
+	public void isMoreGeneric(String a, String b, boolean result) {
+		assertEquals(result, new TypeCopyrightLinter().isMoreGeneric(a, b));
+	}
+
+	@ParameterizedTest
+	@CsvSource({"a,^(\\./)?a$", "hello?there.txt,^(\\./)?hello.there\\.txt$", "file(name)*,^(\\./)?file\\(name\\).*$", "hello[there?]],^(\\./)?hello\\[there.]]$"})
+	public void toRegex(String pattern, String regex) {
+		Pattern p = new TypeCopyrightLinter().toRegex(pattern);
+		assertEquals(regex, p.pattern());
 	}
 
 	private void lint(Configuration config, String text) throws Exception {

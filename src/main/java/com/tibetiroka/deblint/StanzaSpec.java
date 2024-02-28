@@ -12,9 +12,8 @@ package com.tibetiroka.deblint;
 
 import com.tibetiroka.deblint.FieldSpec.RequirementStatus;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 
 /**
  * A stanza spec is a description of what a stanza should or could contain.
@@ -25,7 +24,7 @@ import java.util.function.BiConsumer;
  * @param fields     The fields this stanza can contain
  * @param linter     The linter used for this stanza
  */
-public record StanzaSpec(String name, boolean mandatory, boolean repeatable, HashMap<String, FieldSpec> fields, BiConsumer<Stanza, Configuration> linter) {
+public record StanzaSpec(String name, boolean mandatory, boolean repeatable, Map<String, FieldSpec> fields, StanzaLinter linter) {
 	/**
 	 * Checks whether this spec matches the given stanza. A spec matches a stanza if all required fields are present. The types of the fields are not checked, so it is possible that this method returns true for a match that does not strictly follow the specification. These are reported in {@link #match(Stanza, Configuration)}.
 	 *

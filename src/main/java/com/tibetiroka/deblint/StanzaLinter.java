@@ -10,18 +10,7 @@
 
 package com.tibetiroka.deblint;
 
-/**
- * Specification for a field.
- *
- * @param required Whether the field is required, recommended or is completely optional.
- * @param type     The type of this field, as the stanza requires it
- * @param linter   The linter used for the value of this field
- */
-public record FieldSpec(RequirementStatus required, FieldType type, FieldLinter linter) {
-	/**
-	 * The importance of a data field. {@link #MANDATORY mandatory} fields are required for a {@link StanzaSpec} to apply to a parsed {@link Stanza},
-	 */
-	public static enum RequirementStatus {
-		MANDATORY, RECOMMENDED, OPTIONAL
-	}
+import java.util.function.BiConsumer;
+
+public interface StanzaLinter extends BiConsumer<Stanza, Configuration> {
 }

@@ -19,7 +19,6 @@ import java.time.DateTimeException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 import static com.tibetiroka.deblint.FieldSpec.RequirementStatus.MANDATORY;
@@ -64,7 +63,7 @@ class Linters {
 	 * The list of operating systems, extracted from {@link #architectures}.
 	 */
 	public static final String[] systems = Arrays.stream(architectures).map(a -> a.indexOf('-') == a.lastIndexOf('-') ? a.split("-")[0] : a.split("-")[1]).toArray(String[]::new);
-	protected static final BiConsumer<String, Configuration> ARCHITECTURE_LINTER = (s, config) -> {
+	protected static final FieldLinter ARCHITECTURE_LINTER = (s, config) -> {
 		boolean inverted = s.contains("!");
 		String[] declared = s.split(" ");
 		for(String arch : declared) {
@@ -105,7 +104,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> BINARY_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter BINARY_LIST_LINTER = (s, config) -> {
 		HashSet<String> files = new HashSet<>();
 		if(config.checkedType == ControlType.SOURCE_CONTROL) {
 			for(String string : s.split(",")) {
@@ -131,19 +130,19 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> BOOLEAN_LINTER = (s, config) -> {
+	protected static final FieldLinter BOOLEAN_LINTER = (s, config) -> {
 		if(!s.equals("yes") && !s.equals("no")) {
 			Main.error("Invalid boolean value; should be 'yes' or 'no': " + s, null, "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> CHANGE_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter CHANGE_LIST_LINTER = (s, config) -> {
 		String[] lines = s.split("\\n", -1);
 		if(!lines[0].isBlank()) {
 			Main.error("The first line of changes should be empty", null, "https://www.debian.org/doc/debian-policy/ch-controlfields#changes");
 		}
 		//todo: check all title requirements from https://www.debian.org/doc/debian-policy/ch-controlfields#changes
 	};
-	protected static final BiConsumer<String, Configuration> COPYRIGHT_FILE_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter COPYRIGHT_FILE_LIST_LINTER = (s, config) -> {
 		String[] patterns = s.split("\\n", -1);
 		for(String pattern : patterns) {
 			pattern = pattern.strip();
@@ -155,7 +154,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> DATE_LINTER = (s, config) -> {
+	protected static final FieldLinter DATE_LINTER = (s, config) -> {
 		// day-of-week, dd month yyyy hh:mm:ss +zzzz
 		if(!Pattern.matches("^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d\\d? (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4}$", s)) {
 			Main.error("Invalid date: " + s);
@@ -174,9 +173,9 @@ class Linters {
 	/**
 	 * A linter that accepts any input.
 	 */
-	protected static final BiConsumer<String, Configuration> DEFAULT_LINTER = (s, config) -> {
+	protected static final FieldLinter DEFAULT_LINTER = (s, config) -> {
 	};
-	protected static final BiConsumer<String, Configuration> DESCRIPTION_LINTER = (s, config) -> {
+	protected static final FieldLinter DESCRIPTION_LINTER = (s, config) -> {
 		String[] lines = s.split("\n");
 		if(lines[0].isBlank()) {
 			Main.error("Missing synopsys: ", null, "https://www.debian.org/doc/debian-policy/ch-controlfields#description");
@@ -187,7 +186,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> DGIT_LINTER = (s, config) -> {
+	protected static final FieldLinter DGIT_LINTER = (s, config) -> {
 		String[] parts = s.split(" ");
 		if(config.dgitExtraData && parts.length > 1) {
 			Main.error("Extra data after the commit hash is reserved for future expansion; do not use: " + s, "dgitExtraData", "https://www.debian.org/doc/debian-policy/ch-controlfields#dgit");
@@ -196,12 +195,12 @@ class Linters {
 			Main.error("Invalid git hash: " + parts[0]);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> DISTRIBUTION_LINTER = (s, config) -> {
+	protected static final FieldLinter DISTRIBUTION_LINTER = (s, config) -> {
 		if(config.multipleDistributions && s.contains(" ")) {
 			Main.error("Please only use a single distribution: " + s, "multipleDistributions", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-distribution");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> LICENSE_LINTER = (s, config) -> {
+	protected static final FieldLinter LICENSE_LINTER = (s, config) -> {
 		String[] parts = s.split("\\n");
 		if(s.split("\\n")[0].isBlank()) {
 			Main.error("License must have a short name in the first line: ", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-field");
@@ -231,12 +230,12 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> MD5_LINTER = (s, config) -> {
+	protected static final FieldLinter MD5_LINTER = (s, config) -> {
 		if(!Pattern.matches("^[a-fA-F0-9]{32}$", s)) {
 			Main.error("Invalid MD5 hash: " + s);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> NUMBER_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter NUMBER_LIST_LINTER = (s, config) -> {
 		String[] parts = s.split(" ");
 		HashSet<Integer> numbers = new HashSet<>();
 		for(String part : parts) {
@@ -258,12 +257,12 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> PACKAGE_NAME_LINTER = (s, config) -> {
+	protected static final FieldLinter PACKAGE_NAME_LINTER = (s, config) -> {
 		if(!Pattern.matches("^[a-z0-9][a-z0-9+.\\-]+$", s)) {
 			Main.error("Invalid package name: " + s);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> PACKAGE_TYPE_LINTER = (s, config) -> {
+	protected static final FieldLinter PACKAGE_TYPE_LINTER = (s, config) -> {
 		if(config.unknownPackageType && !s.equals("deb") && !s.equals("udeb")) {
 			Main.error("Unknown package type: " + s, "unknownPackageType");
 		}
@@ -271,7 +270,7 @@ class Linters {
 			Main.error("Package-Type should be omitted when using the default value: " + s, "redundantPackageType", "https://www.debian.org/doc/debian-policy/ch-controlfields#package-type");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> PRIORITY_LINTER = (s, config) -> {
+	protected static final FieldLinter PRIORITY_LINTER = (s, config) -> {
 		if(config.unknownPriority) {
 			String[] priorities = {"required", "important", "standard", "optional", "extra"};
 			if(Arrays.stream(priorities).noneMatch(p -> p.equals(s))) {
@@ -282,7 +281,7 @@ class Linters {
 			Main.error("The 'extra' priority is deprecated, use 'optional' instead", "extraPriority", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> REQUIRES_ROOT_LINTER = (s, config) -> {
+	protected static final FieldLinter REQUIRES_ROOT_LINTER = (s, config) -> {
 		if(s.equals("no") || s.equals("binary-targets")) {
 			return;
 		}
@@ -295,7 +294,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> RFC_822_LINTER = (s, config) -> {
+	protected static final FieldLinter RFC_822_LINTER = (s, config) -> {
 		try {
 			InternetAddress emailAddr = new InternetAddress(s);
 			emailAddr.validate();
@@ -303,7 +302,7 @@ class Linters {
 			Main.error("Invalid email address: " + s, null, "https://www.w3.org/Protocols/rfc822/");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> ADDRESS_LINTER = (s, config) -> {
+	protected static final FieldLinter ADDRESS_LINTER = (s, config) -> {
 		int begin = s.indexOf('<');
 		int end = s.lastIndexOf('>');
 		if(begin == -1 || end == -1 || end < begin) {
@@ -321,12 +320,12 @@ class Linters {
 			Main.error("Missing name: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> MULTI_ADDRESS_LINTER = (s, config) -> {
+	protected static final FieldLinter MULTI_ADDRESS_LINTER = (s, config) -> {
 		for(String address : s.split(",", -1)) {
 			ADDRESS_LINTER.accept(address, config);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> UPSTREAM_CONTACT_LINTER = (s, config) -> {
+	protected static final FieldLinter UPSTREAM_CONTACT_LINTER = (s, config) -> {
 		if(config.upstreamContactStyle) {
 			try {
 				URL u = new URI(s).toURL();
@@ -336,7 +335,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> SECTION_LINTER = (s, config) -> {
+	protected static final FieldLinter SECTION_LINTER = (s, config) -> {
 		String[] areas = {"contrib", "non-free"};
 		String[] sections = {"admin", "cli-mono", "comm", "database", "debian-installer", "debug", "devel", "doc", "editors", "education", "electronics", "embedded", "fonts", "games", "gnome", "gnu-r", "gnustep", "graphics", "hamradio", "haskell", "httpd", "interpreters", "introspection", "java", "javascript", "kde", "kernel", "libdevel", "libs", "lisp", "localization", "mail", "math", "metapackages", "misc", "net", "news", "ocaml", "oldlibs", "otherosfs", "perl", "php", "python", "ruby", "rust", "science", "shells", "sound", "tasks", "tex", "text", "utils", "vcs", "video", "web", "x11", "xfce", "zope"};
 		String section;
@@ -356,7 +355,7 @@ class Linters {
 			Main.error("debian-installer section should not be used here: " + s, "debianInstallerSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> PACKAGE_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter PACKAGE_LIST_LINTER = (s, config) -> {
 		String[] lines = s.split("\\n", -1);
 		if(!lines[0].isBlank()) {
 			Main.error("Package-List must begin with an empty line: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-package-list");
@@ -380,53 +379,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> SIZE_LINTER = (s, config) -> {
-		try {
-			Long l = Long.parseLong(s);
-			if(l < 0) {
-				Main.error("Size cannot be negative: " + s);
-			} else if(s.startsWith("+")) {
-				Main.error("Size must be unsigned: " + s);
-			}
-		} catch(NumberFormatException e) {
-			Main.error("Invalid size: " + s);
-		}
-	};
-	protected static final BiConsumer<String, Configuration> SHA1_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n");
-		if(!lines[0].isBlank()) {
-			Main.error("The first line of checksums should be empty");
-		}
-		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
-			String[] parts = l.split(" ", 3);
-			if(parts.length < 3) {
-				Main.error("Missing parameter; 3 values required: " + l);
-				return;
-			}
-			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
-				Main.error("Invalid SHA hash: " + parts[0]);
-			}
-			SIZE_LINTER.accept(parts[1], config);
-		});
-	};
-	protected static final BiConsumer<String, Configuration> SHA256_LINTER = (s, config) -> {
-		String[] lines = s.split("\n");
-		if(!lines[0].isBlank()) {
-			Main.error("The first line of checksums should be empty");
-		}
-		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
-			String[] parts = l.split(" ", 3);
-			if(parts.length < 3) {
-				Main.error("Missing parameter; 3 values required: " + l);
-				return;
-			}
-			if(!Pattern.matches("^[a-fA-F0-9]{64}$", parts[0])) {
-				Main.error("Invalid SHA hash: " + parts[0]);
-			}
-			SIZE_LINTER.accept(parts[1], config);
-		});
-	};
-	protected static final BiConsumer<String, Configuration> SINGLE_ARCHITECTURE_LINTER = (s, config) -> {
+	protected static final FieldLinter SINGLE_ARCHITECTURE_LINTER = (s, config) -> {
 		ArrayList<String> arches = new ArrayList<>(List.of(s.split(" ")));
 		if(config.duplicateArchitecture && arches.size() > new HashSet<>(arches).size()) {
 			Main.error("Duplicated architecture: " + s, "duplicateArchitecture");
@@ -461,7 +414,53 @@ class Linters {
 			ARCHITECTURE_LINTER.accept(s, config);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> FILE_LIST_LINTER = (s, config) -> {
+	protected static final FieldLinter SIZE_LINTER = (s, config) -> {
+		try {
+			Long l = Long.parseLong(s);
+			if(l < 0) {
+				Main.error("Size cannot be negative: " + s);
+			} else if(s.startsWith("+")) {
+				Main.error("Size must be unsigned: " + s);
+			}
+		} catch(NumberFormatException e) {
+			Main.error("Invalid size: " + s);
+		}
+	};
+	protected static final FieldLinter SHA1_LINTER = (s, config) -> {
+		String[] lines = s.split("\\n");
+		if(!lines[0].isBlank()) {
+			Main.error("The first line of checksums should be empty");
+		}
+		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
+			String[] parts = l.split(" ", 3);
+			if(parts.length < 3) {
+				Main.error("Missing parameter; 3 values required: " + l);
+				return;
+			}
+			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
+				Main.error("Invalid SHA hash: " + parts[0]);
+			}
+			SIZE_LINTER.accept(parts[1], config);
+		});
+	};
+	protected static final FieldLinter SHA256_LINTER = (s, config) -> {
+		String[] lines = s.split("\n");
+		if(!lines[0].isBlank()) {
+			Main.error("The first line of checksums should be empty");
+		}
+		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
+			String[] parts = l.split(" ", 3);
+			if(parts.length < 3) {
+				Main.error("Missing parameter; 3 values required: " + l);
+				return;
+			}
+			if(!Pattern.matches("^[a-fA-F0-9]{64}$", parts[0])) {
+				Main.error("Invalid SHA hash: " + parts[0]);
+			}
+			SIZE_LINTER.accept(parts[1], config);
+		});
+	};
+	protected static final FieldLinter FILE_LIST_LINTER = (s, config) -> {
 		String[] lines = s.split("\\n");
 		if(!lines[0].isBlank()) {
 			Main.error("The first line of 'Files' should be empty: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
@@ -518,7 +517,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> STANDARDS_VERSION_LINTER = (s, config) -> {
+	protected static final FieldLinter STANDARDS_VERSION_LINTER = (s, config) -> {
 		String[] parts = s.split("\\.");
 		int[] latest = {4, 6, 2, 1};
 		if(parts.length < 3 || parts.length > 4) {
@@ -540,7 +539,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_CHECKSUM_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_CHECKSUM_LINTER = (s, config) -> {
 		String[] hashes = {"Checksums-Sha1", "Checksums-Sha256"};
 		HashSet<String> files = new HashSet<>();
 		DataField fileField = s.getField("Files");
@@ -565,9 +564,9 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_DEFAULT_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_DEFAULT_LINTER = (s, config) -> {
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_SOURCE_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_SOURCE_LINTER = (s, config) -> {
 		if(config.sourceRedundantVersion) {
 			DataField source = s.getField("source");
 			DataField version = s.getField("Version");
@@ -584,11 +583,11 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_SOURCE_AND_CHECKSUM_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_SOURCE_AND_CHECKSUM_LINTER = (s, config) -> {
 		STANZA_SOURCE_LINTER.accept(s, config);
 		STANZA_CHECKSUM_LINTER.accept(s, config);
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_VCS_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_VCS_LINTER = (s, config) -> {
 		String[] vcsFields = {"Vcs-Arch", "Vcs-Bzr", "Vcs-Cvs", "Vcs-Darcs", "Vcs-Git", "Vcs-Hg", "Vcs-Mtn", "Vcs-Svn"};
 		boolean found = false;
 		for(String vcsField : vcsFields) {
@@ -601,23 +600,23 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_SOURCE_AND_VCS_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_SOURCE_AND_VCS_LINTER = (s, config) -> {
 		STANZA_VCS_LINTER.accept(s, config);
 		STANZA_SOURCE_LINTER.accept(s, config);
 	};
-	protected static final BiConsumer<Stanza, Configuration> STANZA_SOURCE_CONTROL_LINTER = (s, config) -> {
+	protected static final StanzaLinter STANZA_SOURCE_CONTROL_LINTER = (s, config) -> {
 		STANZA_VCS_LINTER.accept(s, config);
 		STANZA_SOURCE_LINTER.accept(s, config);
 		STANZA_CHECKSUM_LINTER.accept(s, config);
 	};
-	protected static final BiConsumer<ControlFile, Configuration> TYPE_COPYRIGHT_LINTER = new TypeCopyrightLinter();
-	protected static final BiConsumer<String, Configuration> UPSTREAM_VERSION_LINTER = (s, config) -> {
+	protected static final FileLinter TYPE_COPYRIGHT_LINTER = new TypeCopyrightLinter();
+	protected static final FieldLinter UPSTREAM_VERSION_LINTER = (s, config) -> {
 		Pattern upstream = Pattern.compile("^[0-9][A-Za-z0-9.+~\\-]*$");
 		if(!upstream.matcher(s).matches()) {
 			Main.error("Upstream version uses an invalid format: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> FORMAT_VERSION_LINTER = (s, config) -> {
+	protected static final FieldLinter FORMAT_VERSION_LINTER = (s, config) -> {
 		if(config.checkedType == ControlType.CHANGES) {
 			UPSTREAM_VERSION_LINTER.accept(s, config);
 			if(config.exactFormatVersion && !s.equals("1.8")) {
@@ -635,7 +634,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> URGENCY_LINTER = (s, config) -> {
+	protected static final FieldLinter URGENCY_LINTER = (s, config) -> {
 		String[] urgencies = {"low", "medium", "high", "emergency", "critical"};
 		String[] parts = s.split(" ", 2);
 		if(config.customUrgencies && Arrays.stream(urgencies).noneMatch(a -> a.equalsIgnoreCase(parts[0]))) {
@@ -647,7 +646,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> URL_LINTER = (s, config) -> {
+	protected static final FieldLinter URL_LINTER = (s, config) -> {
 		try {
 			URL u = new URI(s).toURL();
 			checkUrl(u, config);
@@ -655,7 +654,7 @@ class Linters {
 			Main.error("Invalid URL: " + s);
 		}
 	};
-	protected static final BiConsumer<String, Configuration> GIT_VCS_LINTER = (s, config) -> {
+	protected static final FieldLinter GIT_VCS_LINTER = (s, config) -> {
 		String[] parts = s.split(" ", 2);
 		String url = parts[0];
 		URL_LINTER.accept(url, config);
@@ -691,7 +690,7 @@ class Linters {
 			Main.error("Missing branch definition for Git: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> MERCURIAL_VCS_LINTER = (s, config) -> {
+	protected static final FieldLinter MERCURIAL_VCS_LINTER = (s, config) -> {
 		String[] parts = s.split(" ", 2);
 		String url = parts[0];
 		URL_LINTER.accept(url, config);
@@ -707,7 +706,7 @@ class Linters {
 			Main.error("Missing branch definition for Mercurial: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> COPYRIGHT_FORMAT_LINTER = (s, config) -> {
+	protected static final FieldLinter COPYRIGHT_FORMAT_LINTER = (s, config) -> {
 		URL_LINTER.accept(s, config);
 		if(config.strictCopyrightFormatVersion) {
 			if(!s.equals("https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/")) {
@@ -715,7 +714,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> COPYRIGHT_SOURCE_LINTER = (s, config) -> {
+	protected static final FieldLinter COPYRIGHT_SOURCE_LINTER = (s, config) -> {
 		if(config.copyrightSourceStyle) {
 			try {
 				URL_LINTER.accept(s, config);
@@ -724,7 +723,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> VERSION_LINTER = (s, config) -> {
+	protected static final FieldLinter VERSION_LINTER = (s, config) -> {
 		String[] epochSplit = s.split(":", 2);
 		String epoch = epochSplit.length == 2 ? epochSplit[0] : "0";
 		String remaining = epochSplit.length == 2 ? epochSplit[1] : epochSplit[0];
@@ -748,7 +747,7 @@ class Linters {
 			Main.error("Debian version uses an invalid format: " + debianRevision, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
 		}
 	};
-	protected static final BiConsumer<String, Configuration> DEPENDENCY_LINTER = (s, config) -> {
+	protected static final FieldLinter DEPENDENCY_LINTER = (s, config) -> {
 		String[] packages = s.split("[|,]");
 		String[] operators = {"<<", "<=", "=", ">=", ">>"};
 		for(String aPackage : packages) {
@@ -790,7 +789,7 @@ class Linters {
 			}
 		}
 	};
-	protected static final BiConsumer<String, Configuration> EXACT_DEPENDENCY_LINTER = (s, config) -> {
+	protected static final FieldLinter EXACT_DEPENDENCY_LINTER = (s, config) -> {
 		String[] forbidden_operators = {"<<", "<=", ">=", ">>"};
 		for(String op : forbidden_operators) {
 			if(s.contains(op)) {
@@ -799,7 +798,7 @@ class Linters {
 		}
 		DEPENDENCY_LINTER.accept(s, config);
 	};
-	protected static final BiConsumer<String, Configuration> SOURCE_LINTER = (s, config) -> {
+	protected static final FieldLinter SOURCE_LINTER = (s, config) -> {
 		String[] parts = s.split("\\(", 2);
 		PACKAGE_NAME_LINTER.accept(parts[0].stripTrailing(), config);
 		if(parts.length == 2) {
@@ -810,7 +809,7 @@ class Linters {
 			VERSION_LINTER.accept(version, config);
 		}
 	};
-	private static final BiConsumer<Stanza, Configuration> STANZA_COPYRIGHT_HEADER_LINTER = (s, config) -> {
+	private static final StanzaLinter STANZA_COPYRIGHT_HEADER_LINTER = (s, config) -> {
 		if(s.getField("Copyright") != null && s.getField("License") == null) {
 			Main.error("A Copyright field alone is not sufficient; please include a License field as well when an explanation is needed: Copyright", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#header-stanza");
 		}
@@ -1009,7 +1008,7 @@ class Linters {
 	/**
 	 * A linter fpr {@link ControlType#COPYRIGHT} files.
 	 */
-	public static class TypeCopyrightLinter implements BiConsumer<ControlFile, Configuration> {
+	public static class TypeCopyrightLinter implements FileLinter {
 		/**
 		 * A cache for compiled patters, used in {@link #toRegex(String)}.
 		 */
