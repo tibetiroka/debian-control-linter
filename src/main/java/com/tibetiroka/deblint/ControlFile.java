@@ -100,7 +100,9 @@ public class ControlFile {
 		List<StanzaSpec> usedSpecs = new ArrayList<>();
 		for(Stanza stanza : stanzas) {
 			ArrayList<StanzaSpec> matching = new ArrayList<>();
+			List<StanzaSpec> attempted = new ArrayList<>();
 			for(StanzaSpec spec : specs) {
+				attempted.add(spec);
 				if(spec.mandatory()) {
 					if(spec.canMatch(stanza, config)) {
 						matching.add(spec);
@@ -116,7 +118,13 @@ public class ControlFile {
 				}
 			}
 			if(matching.isEmpty()) {
-				Main.error("Cannot match stanza; possibly missing fields or incorrect stanza order: no. " + (usedSpecs.size() + 1));
+				String text = "Cannot match stanza; possibly missing fields or incorrect stanza order: no. " + (usedSpecs.size() + 1);
+				if(attempted.isEmpty()) {
+					text += " (no stanzas were left to match; maybe the error is in an earlier stanza)";
+				} else {
+					text += " (attempted matching with: " + String.join(", ", attempted.stream().map(StanzaSpec::name).toList()) + ")";
+				}
+				Main.error(text);
 				StanzaSpec spec = new StanzaSpec("blank stanza", false, false, new HashMap<>(), (a, b) -> {
 				});
 				usedSpecs.add(spec);

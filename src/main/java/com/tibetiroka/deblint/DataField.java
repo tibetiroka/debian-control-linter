@@ -45,8 +45,8 @@ public record DataField(String name, String data, FieldType type) {
 			Main.error("Data field declaration is missing colon: " + first);
 			return null;
 		}
-		if(!fieldName.matches("[!-\"$-,.-9;-~][!-9;-~]*")) {
-			Main.error("Invalid field name: " + fieldName, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+		if(config.fieldName && !fieldName.matches("[!-\"$-,.-9;-~][!-9;-~]*")) {
+			Main.error("Invalid field name: " + fieldName, "fieldName", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
 		}
 		if(config.spaceAfterColon && (!parts[1].startsWith(" ") && !parts[1].isEmpty())) {
 			Main.error("Missing space after colon: " + fieldName, "spaceAfterColon", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
@@ -74,16 +74,23 @@ public record DataField(String name, String data, FieldType type) {
 	 * <p>
 	 * If the field cannot be converted to the new type, {@code null} is returned.
 	 *
-	 * @param type The new type of the field
+	 * @param type  The new type of the field
+	 * @param force If true, conversion is always done, even if it is invalid
 	 * @return The converted field or null
 	 */
-	public DataField changeType(FieldType type) {
+	public DataField changeType(FieldType type, boolean force) {
 		if(type == this.type) {
 			return this;
 		} else if(this.type == FieldType.MULTILINE && type == FieldType.FOLDED) {
 			return new DataField(name, data.replaceAll("\\s*\\n\\s*", ""), type);
 		} else if(this.type == FieldType.SIMPLE) {
 			return new DataField(name, data, type);
+		} else if(force) {
+			if(type == FieldType.SIMPLE) {
+				return new DataField(name, data.split("\\n", 2)[0], type);
+			} else {
+				return new DataField(name, data, type);
+			}
 		} else {
 			return null;
 		}

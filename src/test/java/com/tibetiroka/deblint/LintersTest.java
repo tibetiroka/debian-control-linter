@@ -29,7 +29,7 @@ class LintersTest {
 	@Test
 	public void architectureLinterTest() {
 		var linter = Linters.ARCHITECTURE_LINTER;
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("hi !there", Configuration.PRESET_QUIRKS));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("hi !there", Configuration.PRESET_NORMAL));
 		assertDoesNotThrow(() -> linter.accept("hi there", Configuration.PRESET_QUIRKS));
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("őúúőő", Configuration.PRESET_QUIRKS));
 		assertDoesNotThrow(() -> linter.accept("linux-any", Configuration.PRESET_EXACT));
@@ -85,7 +85,7 @@ class LintersTest {
 	@Test
 	public void copyrightSourceLinter() {
 		var linter = Linters.COPYRIGHT_SOURCE_LINTER;
-		Configuration config = Configuration.PRESET_QUIRKS.clone();
+		Configuration config = Configuration.PRESET_NORMAL.clone();
 		config.copyrightSourceStyle = true;
 		assertDoesNotThrow(() -> linter.accept("https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/", config));
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("package name", config));
@@ -179,7 +179,7 @@ class LintersTest {
 	@Test
 	public void formatVersionLinter() {
 		var linter = Linters.FORMAT_VERSION_LINTER;
-		Configuration config = Configuration.PRESET_QUIRKS.clone();
+		Configuration config = Configuration.PRESET_NORMAL.clone();
 		config.checkedType = ControlType.CHANGES;
 		assertDoesNotThrow(() -> linter.accept("1.0", config));
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("alpha", config));
@@ -198,7 +198,7 @@ class LintersTest {
 		assertDoesNotThrow(() -> linter.accept("https://example.org/repo [p/package]", Configuration.PRESET_QUIRKS));
 		assertDoesNotThrow(() -> linter.accept("https://example.org/repo", Configuration.PRESET_QUIRKS));
 		assertDoesNotThrow(() -> linter.accept("https://example.org/repo -b debian", Configuration.PRESET_QUIRKS));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("example.org/repo -b debian [p/package]", Configuration.PRESET_QUIRKS));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("example.org/repo -b debian [p/package]", Configuration.PRESET_NORMAL));
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("https://example.org/repo debian [p/package]", Configuration.PRESET_QUIRKS));
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("https://example.org/repo -b debian p/package", Configuration.PRESET_QUIRKS));
 	}
@@ -314,9 +314,9 @@ class LintersTest {
 		assertDoesNotThrow(() -> linter.accept("admin", Configuration.PRESET_EXACT));
 		assertDoesNotThrow(() -> linter.accept("contrib/database", Configuration.PRESET_EXACT));
 		assertDoesNotThrow(() -> linter.accept("non-free/debian-installer", Configuration.PRESET_QUIRKS));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("admin/debian-installer", Configuration.PRESET_QUIRKS));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("missing-section", Configuration.PRESET_QUIRKS));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("missing-area/database", Configuration.PRESET_QUIRKS));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("admin/debian-installer", Configuration.PRESET_NORMAL));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("missing-section", Configuration.PRESET_STRICT));
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("missing-area/database", Configuration.PRESET_STRICT));
 	}
 
 	@Test
@@ -400,8 +400,8 @@ class LintersTest {
 	public void urlLinter() {
 		var linter = Linters.URL_LINTER;
 		assertDoesNotThrow(() -> linter.accept("https://example.com/", Configuration.PRESET_QUIRKS));
-		assertThrows(IllegalArgumentException.class, () -> linter.accept("example.com", Configuration.PRESET_QUIRKS));
-		Configuration config = Configuration.PRESET_QUIRKS.clone();
+		assertThrows(IllegalArgumentException.class, () -> linter.accept("example.com", Configuration.PRESET_NORMAL));
+		Configuration config = Configuration.PRESET_NORMAL.clone();
 		config.urlForceHttps = true;
 		assertThrows(IllegalArgumentException.class, () -> linter.accept("http://example.com", config));
 	}

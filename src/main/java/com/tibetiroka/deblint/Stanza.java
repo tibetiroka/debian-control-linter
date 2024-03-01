@@ -39,10 +39,14 @@ public class Stanza {
 			DataField field = DataField.parseNext(lines, config);
 			if(field != null) {
 				if(fieldNames.contains(field.name().toUpperCase())) {
-					Main.error("Duplicate data field in stanza: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+					if(config.duplicateField) {
+						Main.error("Duplicate data field in stanza: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+					}
 				} else {
-					if(field.data().isEmpty()) {
-						Main.error("Empty data field: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+					if(config.emptyFields) {
+						if(field.data().isEmpty()) {
+							Main.error("Empty data field: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+						}
 					}
 					s.dataFields.add(field);
 					fieldNames.add(field.name().toLowerCase());

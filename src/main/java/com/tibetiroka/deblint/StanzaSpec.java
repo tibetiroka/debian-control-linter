@@ -55,10 +55,13 @@ public record StanzaSpec(String name, boolean mandatory, boolean repeatable, Map
 			FieldSpec spec = entry.getValue();
 			DataField field = s.getField(name);
 			if(field != null) {
-				DataField proper = field.changeType(spec.type());
+				DataField proper = field.changeType(spec.type(), false);
 				s.dataFields.remove(field);
 				if(proper == null) {
-					Main.error("Invalid field type for field " + name + ": expected " + spec.type() + ", found " + field.type(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+					if(config.fieldType) {
+						Main.error("Invalid field type for field " + name + ": expected " + spec.type() + ", found " + field.type(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+					}
+					s.dataFields.add(field.changeType(spec.type(), true));
 				} else {
 					s.dataFields.add(proper);
 				}
@@ -76,7 +79,7 @@ public record StanzaSpec(String name, boolean mandatory, boolean repeatable, Map
 					}
 				}
 				if(!found) {
-					Main.error("Custom field: " + field.name());
+					Main.error("Custom field: " + field.name(), "customFields");
 					if(config.customFieldNames) {
 						if(!field.name().matches("X[BCS]{1,3}-.+")) {
 							Main.error("Invalid custom field name: " + field.name(), "customFieldNames", "https://www.debian.org/doc/debian-policy/ch-controlfields#user-defined-fields");

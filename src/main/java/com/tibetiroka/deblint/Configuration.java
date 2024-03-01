@@ -165,12 +165,73 @@ public class Configuration implements Cloneable {
 		//
 		PRESET_STRICT.duplicateFilePattern = true;
 		PRESET_EXACT.duplicateFilePattern = true;
+		//
+		PRESET_NORMAL.fieldName = true;
+		PRESET_STRICT.fieldName = true;
+		PRESET_EXACT.fieldName = true;
+		//
+		PRESET_NORMAL.duplicateField = true;
+		PRESET_STRICT.duplicateField = true;
+		PRESET_EXACT.duplicateField = true;
+		//
+		PRESET_NORMAL.fieldType = true;
+		PRESET_STRICT.fieldType = true;
+		PRESET_EXACT.fieldType = true;
+		//
+		PRESET_NORMAL.archInversion = true;
+		PRESET_STRICT.archInversion = true;
+		PRESET_EXACT.archInversion = true;
+		//
+		PRESET_NORMAL.futureDate = true;
+		PRESET_STRICT.futureDate = true;
+		PRESET_EXACT.futureDate = true;
+		//
+		PRESET_NORMAL.descriptionReservedSyntax = true;
+		PRESET_STRICT.descriptionReservedSyntax = true;
+		PRESET_EXACT.descriptionReservedSyntax = true;
+		//
+		PRESET_NORMAL.fileListIndent = true;
+		PRESET_STRICT.fileListIndent = true;
+		PRESET_EXACT.fileListIndent = true;
+		//
+		PRESET_NORMAL.duplicateVcs = true;
+		PRESET_STRICT.duplicateVcs = true;
+		PRESET_EXACT.duplicateVcs = true;
+		//
+		PRESET_NORMAL.upstreamVersionStyle = true;
+		PRESET_STRICT.upstreamVersionStyle = true;
+		PRESET_EXACT.upstreamVersionStyle = true;
+		//
+		PRESET_NORMAL.url = true;
+		PRESET_STRICT.url = true;
+		PRESET_EXACT.url = true;
+		//
+		PRESET_NORMAL.versionStyle = true;
+		PRESET_STRICT.versionStyle = true;
+		PRESET_EXACT.versionStyle = true;
+		//
+		PRESET_STRICT.strictSection = true;
+		PRESET_EXACT.strictSection = true;
+		//
+		PRESET_NORMAL.leadingEmptyLine = true;
+		PRESET_STRICT.leadingEmptyLine = true;
+		PRESET_EXACT.leadingEmptyLine = true;
+		//
+		PRESET_NORMAL.email = true;
+		PRESET_STRICT.email = true;
+		PRESET_EXACT.email = true;
+		//
+		PRESET_NORMAL.addressStyle = true;
+		PRESET_STRICT.addressStyle = true;
+		PRESET_EXACT.addressStyle = true;
 	}
 
 	/**
 	 * The description of the preset, used in {@code --preset-info}.
 	 */
 	public final String presetDescription;
+	public boolean addressStyle;
+	public boolean archInversion;
 	/**
 	 * The type of control file this object is configured for.
 	 */
@@ -183,17 +244,26 @@ public class Configuration implements Cloneable {
 	public boolean customLicenseException;
 	public boolean customUrgencies;
 	public boolean debianInstallerSection;
+	public boolean descriptionReservedSyntax;
 	public boolean dgitExtraData;
 	public boolean duplicateArchitecture;
+	public boolean duplicateField;
 	public boolean duplicateFilePattern;
 	public boolean duplicateFiles;
 	public boolean duplicateIssueNumbers;
 	public boolean duplicatePackages;
+	public boolean duplicateVcs;
+	public boolean email;
 	public boolean emptyFields;
 	public boolean emptyStanzaSeparators;
 	public boolean exactFormatVersion;
 	public boolean extraPriority;
+	public boolean fieldName;
 	public boolean fieldNameCapitalization;
+	public boolean fieldType;
+	public boolean fileListIndent;
+	public boolean futureDate;
+	public boolean leadingEmptyLine;
 	public boolean licenseDeclarations;
 	public boolean licenseDeclaredAfterExplanation;
 	public boolean licenseName;
@@ -207,6 +277,7 @@ public class Configuration implements Cloneable {
 	public boolean spaceAfterColon;
 	public boolean strictArch;
 	public boolean strictCopyrightFormatVersion;
+	public boolean strictSection;
 	public boolean strictStandardsVersion;
 	/**
 	 * The file checked by this configuration.
@@ -216,10 +287,13 @@ public class Configuration implements Cloneable {
 	public boolean unknownPackageType;
 	public boolean unknownPriority;
 	public boolean upstreamContactStyle;
+	public boolean upstreamVersionStyle;
 	public boolean urgencyDescriptionParentheses;
+	public boolean url;
 	public boolean urlExists;
 	public boolean urlForceHttps;
 	public boolean vcsBranch;
+	public boolean versionStyle;
 
 	/**
 	 * Creates a new configuration with the specified description. The description cannot be changed later.
@@ -289,25 +363,36 @@ public class Configuration implements Cloneable {
 	 * Contains details about various configuration options, for use via {@code --check-info}.
 	 */
 	public static final class ConfigOptionDetails {
+		public static final String addressStyle = "An address (name and email) not using the proper format.";
+		public static final String archInversion = "Mixed inverted and non-inverted architectures.";
 		public static final String comments = "Comments outside of debian/control files.";
 		public static final String copyrightFilePatternGenerality = "Whether more generic file patterns are declared first in copyright files. When disabled, debian/copyright file lists are not checked for for 'redundantFilePattern' and 'duplicateFilePattern'.";
 		public static final String copyrightSourceStyle = "A Source field in a debian/copyright file that is not a single URL address.";
 		public static final String customFieldNames = "A user-defined field not following the naming scheme.";
-		public static final String customFields = "Fields that are not listed in the specification.";
+		public static final String customFields = "Fields that are not listed in the specification. When disabled, fields are not checked for 'customFieldNames'.";
 		public static final String customLicenseException = "License exception not listed in the specification.";
 		public static final String customUrgencies = "An Urgency field value not listed in the specification.";
 		public static final String debianInstallerSection = "A Section field value of 'debian-installer'.";
+		public static final String descriptionReservedSyntax = "Reserved syntax used in descriptions.";
 		public static final String dgitExtraData = "Extra data specified in a Dgit field, reserved for future expansion.";
 		public static final String duplicateArchitecture = "An Architecture field declaring the same architecture more than once.";
+		public static final String duplicateField = "A field declared twice in the same stanza.";
 		public static final String duplicateFilePattern = "A file pattern repeated within the same field.";
 		public static final String duplicateFiles = "Duplicate entry in a file list.";
 		public static final String duplicateIssueNumbers = "A Closes field with repeated issue numbers.";
 		public static final String duplicatePackages = "Duplicate entry in a package list.";
+		public static final String duplicateVcs = "More than one version control filed declared.";
+		public static final String email = "An email address with an invalid format.";
 		public static final String emptyFields = "Fields with no value specified.";
 		public static final String emptyStanzaSeparators = "Stanza separators that contain whitespaces.";
 		public static final String exactFormatVersion = "An unrecognized format version.";
 		public static final String extraPriority = "The use of the deprecated Priority value 'extra'.";
+		public static final String fieldName = "A field name using invalid characters or formatting.";
 		public static final String fieldNameCapitalization = "Field name that is not capitalized according to the established conventions.";
+		public static final String fieldType = "A field with an invalid type.";
+		public static final String fileListIndent = "A file list not using a single space as indentation.";
+		public static final String futureDate = "A future date specified in a Date field.";
+		public static final String leadingEmptyLine = "A field that should begin with an empty line but doesn't.";
 		public static final String licenseDeclarations = "Declared licenses that are not used, or used licenses that are not declared.";
 		public static final String licenseDeclaredAfterExplanation = "A license that had an explanation every time it was used, and still has a stand-alone license stanza.";
 		public static final String licenseName = "Short license name(s) not properly formatted. When disabled, debian/copyright licenses are also not checked for 'customLicenseException'.";
@@ -321,14 +406,18 @@ public class Configuration implements Cloneable {
 		public static final String spaceAfterColon = "A colon that has no space after it, and doesn't end the line.";
 		public static final String strictArch = "An architecture not recognized.";
 		public static final String strictCopyrightFormatVersion = "A copyright format version not recognized.";
+		public static final String strictSection = "A section or area name not recognized.";
 		public static final String strictStandardsVersion = "A standards version not recognized.";
 		public static final String trailingSpace = "Line that ends with a trailing whitespace.";
 		public static final String unknownPackageType = "An unrecognized type is used in a Package-Type field. Currently, the recognized types are 'deb' and 'udeb'. Used in debian/control files.";
 		public static final String unknownPriority = "A priority name not recognized.";
 		public static final String upstreamContactStyle = "An Upstream-Contact field that is not a single URL address or a Maintainer-style contact. Used in debian/copyright files.";
+		public static final String upstreamVersionStyle = "An upstream version using invalid syntax.";
 		public static final String urgencyDescriptionParentheses = "Commentary in an Urgency field that is not wrapped in parentheses. Used in .changes files.";
+		public static final String url = "A URL using an invalid format or unknown schema.";
 		public static final String urlExists = "A URL address that is not reachable.";
 		public static final String urlForceHttps = "A URL address not using the HTTPS protocol.";
 		public static final String vcsBranch = "A VCS field that does not declare a branch when it should.";
+		public static final String versionStyle = "A debian-compatible version not using the proper format.";
 	}
 }

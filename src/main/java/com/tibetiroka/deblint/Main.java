@@ -171,8 +171,7 @@ public class Main {
 			if(IS_TEST) {
 				throw new RuntimeException(e);
 			}
-			error("Error during linting: see format errors above");
-			e.printStackTrace();
+			error("Error during linting: " + e.getMessage());
 			System.exit(2);
 		}
 	}
