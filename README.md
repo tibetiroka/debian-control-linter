@@ -81,3 +81,9 @@ This will produce the `sources`, `javadoc` and the library jar files. For a runn
 ```bash
 mvn package -P native,portable
 ```
+
+For development, you can also enable debug mode to greatly cut compile times for the native image. (Using the native image for development is not necessary, but is made a lot easier with this option.)
+
+```bash
+mvn package -Ddebug=true -Pnative
+```

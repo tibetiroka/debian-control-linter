@@ -140,6 +140,28 @@
 
 	<profiles>
 		<profile>
+			<id>release</id>
+			<activation>
+				<property>
+					<name>!debug</name>
+				</property>
+			</activation>
+			<properties>
+				<performance-options>-O3</performance-options>
+			</properties>
+		</profile>
+		<profile>
+			<id>debug</id>
+			<activation>
+				<property>
+					<name>debug</name>
+				</property>
+			</activation>
+			<properties>
+				<performance-options>-Ob</performance-options>
+			</properties>
+		</profile>
+		<profile>
 			<id>native</id>
 			<build>
 				<plugins>
@@ -170,7 +192,8 @@
 							<buildArgs>
 								<arg>--report-unsupported-elements-at-runtime</arg>
 								<arg>-H:+UnlockExperimentalVMOptions</arg>
-								<arg>-O3</arg>
+								<!--suppress UnresolvedMavenProperty -->
+								<arg>${performance-options}</arg>
 								<arg>--gc=G1</arg>
 								<arg>--strict-image-heap</arg>
 								<arg>--initialize-at-build-time=com.tibetiroka.deblint</arg>
