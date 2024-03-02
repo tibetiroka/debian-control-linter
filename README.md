@@ -2,8 +2,6 @@
 
 A flexible debian control file linter supporting `debian/control`, `DEBIAN/control`, `debian/copyright`, `.changes` and `.dsc` files.
 
-**This software is in an alpha state. While it works well for `debian/copyright` files, some of the other formats are largely untested.**
-
 ## Usage
 
 ```bash
@@ -34,7 +32,7 @@ or the provided man page.
 
 Any file following the debian control file format can be parsed into a series of stanzas containing data fields. For the supported formats, these parsed stanzas are matched with the specification and, if successful, are then checked for errors.
 
-Errors can be check in:
+Errors can be checked in:
 
 - Individual fields
 - Across multiple fields in a stanza (e.g. a `Source` field declaring the same version as the `Version` field)
@@ -46,25 +44,19 @@ Some errors cannot be disabled, not even with the `quirks` preset. Generally, th
 
 ## Limitations
 
-**Variable substitutions and OpenPGP signatures are not supported.**
+**Variable substitutions are not supported.**
 
 As this linter only processes the control file, it is not possible to check for errors across files, such as files without copyright notice or missing entries from a file list.
 
 Error messages are also sometimes ambiguous.
 
-```
+```yml
 License: Unsplash License
 ```
 
 in a `debian/copyright` file will yield the error `Invalid license exception: Unsplash License`, which is not the most intuitive. (The solution is to use a custom, single-word short name for the license, since license names are not allowed to contain spaces.)
 
-Similarly, if a required field is missing from a stanza, the error message will say
-
-```
-Cannot match stanza; possibly missing fields or incorrect stanza order: no. <number>
-```
-
-but doesn't say which field is missing, since there may be an arbitrary number of stanza specifications that may match the given text if a new field was added.
+URLs using a scheme other than HTTP/HTTPS may be misreported as invalid.
 
 ## System Requirements and Building
 

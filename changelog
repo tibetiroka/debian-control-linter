@@ -1,2 +1,12 @@
+Version 1.0:
+ - Added new check `licenseDeclaredAfterExplanation`: when enabled, licenses that are explained every time they are used cannot be declared in stand-alone license stanzas
+ - Decoupled a new check `duplicateFilePattern` from the `redundantFilePattern` check (still under the `copyrightFilePatternGenerality` check)
+ - Various new checks were added for existing errors, making the `quirks` preset more lenient
+ - `--preset-info` now marks checks not enabled in more lenient presets
+ - Added support for files with OpenPGP signatures
+ - Made both checksum fields mandatory and tweaked checks accordingly; removed `multipleChecksums`
+ - Made the error messages for mismatched stanzas more informative
+ - Added more tests and cleaned up the code in some places
+ - Various bugfixes and improvements
 Version 0.1:
  - First public alpha release.
