@@ -28,7 +28,7 @@ public record DataField(String name, String data, FieldType type) {
 	}
 
 	/**
-	 * Parses the next data field, removing its lines from the input list. Please note that this method handles {@link FieldType#MULTILINE multiline} and {@link FieldType#FOLDED folded} fields the same; multiline fields can be converted to folded fields later using {@link #changeType(FieldType)}.
+	 * Parses the next data field, removing its lines from the input list. Please note that this method handles {@link FieldType#MULTILINE multiline} and {@link FieldType#FOLDED folded} fields the same; multiline fields can be converted to folded fields later using {@link #changeType(FieldType, boolean)}.
 	 *
 	 * @param lines The data field and any content following it in the control file
 	 * @return The data field, or null if it could not be parsed
