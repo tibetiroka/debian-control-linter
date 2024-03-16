@@ -19,6 +19,7 @@ import java.time.DateTimeException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import static com.tibetiroka.deblint.FieldSpec.RequirementStatus.MANDATORY;
@@ -1030,7 +1031,7 @@ class Linters {
 		/**
 		 * A cache for compiled patters, used in {@link #toRegex(String)}.
 		 */
-		private static final HashMap<String, Pattern> PARSED_PATTERNS = new HashMap<>();
+		private static final ConcurrentHashMap<String, Pattern> PARSED_PATTERNS = new ConcurrentHashMap<>();
 
 		@Override
 		public void accept(ControlFile file, Configuration config) {
@@ -1124,14 +1125,13 @@ class Linters {
 		 */
 		public void lintFileStanzas(ControlFile file, Configuration config) {
 			if(config.copyrightFilePatternGenerality) {
-				HashSet<String> previousPatterns = new HashSet<>();
+				ArrayList<String> previousPatterns = new ArrayList<>();
 				for(int i = 0; i < file.getSpecs().size(); i++) {
 					StanzaSpec spec = file.getSpecs().get(i);
 					if(spec.name().equals("file stanza")) {
-						ArrayList<String> currentPatterns = new ArrayList<>();
 						Stanza s = file.getStanzas().get(i);
 						DataField field = s.getField("Files");
-						Arrays.stream(field.data().split("\\n")).map(String::trim).filter(d -> !d.isEmpty()).forEachOrdered(currentPatterns::add);
+						List<String> currentPatterns = Arrays.stream(field.data().split("\\n")).map(String::trim).filter(d -> !d.isEmpty()).toList();
 						if(config.redundantFilePattern || config.duplicateFilePattern) {
 							for(int i1 = 0; i1 < currentPatterns.size(); i1++) {
 								String pat1 = currentPatterns.get(i1);
@@ -1146,13 +1146,13 @@ class Linters {
 								}
 							}
 						}
-						for(String current : currentPatterns) {
-							for(String previous : previousPatterns) {
+						previousPatterns.parallelStream().forEach(previous -> {
+							for(String current : currentPatterns) {
 								if(isMoreGeneric(current, previous)) {
 									Main.error("More generic patterns should precede specific ones: " + previous + " and " + current, "copyrightFilePatternGenerality", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field");
 								}
 							}
-						}
+						});
 						previousPatterns.addAll(currentPatterns.stream().map(this::normalizePattern).toList());
 					}
 				}

@@ -48,7 +48,7 @@ public class Main {
 	 * @param error The error message
 	 * @throws IllegalArgumentException If testing
 	 */
-	public static void error(String error) {
+	public static synchronized void error(String error) {
 		error(error, null, null);
 	}
 
@@ -59,7 +59,7 @@ public class Main {
 	 * @param check The name of the check that generated the error
 	 * @throws IllegalArgumentException If testing
 	 */
-	public static void error(String error, String check) {
+	public static synchronized void error(String error, String check) {
 		error(error, check, null);
 	}
 
@@ -71,7 +71,7 @@ public class Main {
 	 * @param reference The error's description in the standard
 	 * @throws IllegalArgumentException If testing
 	 */
-	public static void error(String error, String check, String reference) {
+	public static synchronized void error(String error, String check, String reference) {
 		ERROR_COUNT++;
 		if(IS_TEST) {
 			if(check != null) {
@@ -107,7 +107,7 @@ public class Main {
 	 *
 	 * @param information The message to print
 	 */
-	public static void info(String information) {
+	public static synchronized void info(String information) {
 		if(!IS_TEST) {
 			System.out.println(information);
 		}
@@ -148,7 +148,7 @@ public class Main {
 	 * @param warning The warning to display
 	 * @throws IllegalStateException If testing
 	 */
-	public static void warn(String warning) {
+	public static synchronized void warn(String warning) {
 		if(IS_TEST) {
 			throw new IllegalStateException(warning);
 		} else {
