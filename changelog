@@ -1,3 +1,6 @@
+Version 1.1.0:
+ - Added support for displaying line numbers in error messages
+ - Optimized the performance of the copyrightFilePatternGenerality check
 Version 1.0.0:
  - Added new check `licenseDeclaredAfterExplanation`: when enabled, licenses that are explained every time they are used cannot be declared in stand-alone license stanzas
  - Decoupled a new check `duplicateFilePattern` from the `redundantFilePattern` check (still under the `copyrightFilePatternGenerality` check)
