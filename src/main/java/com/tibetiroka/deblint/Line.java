@@ -10,8 +10,9 @@
 
 package com.tibetiroka.deblint;
 
-import java.util.function.BiConsumer;
-
-@FunctionalInterface
-public interface FieldLinter extends BiConsumer<Line, Configuration> {
+public record Line(String text, int lineNumber) {
+	@Override
+	public String toString() {
+		return text;
+	}
 }

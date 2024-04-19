@@ -18,12 +18,14 @@ import java.util.ListIterator;
  *
  * @param name The name of this field
  * @param data The data stored in this field, with surrounding whitespaces trimmed
+ * @param line The first line this field occupies
  * @param type The type of this field, as parsed
  */
-public record DataField(String name, String data, FieldType type) {
-	public DataField(String name, String data, FieldType type) {
+public record DataField(String name, String data, int line, FieldType type) {
+	public DataField(String name, String data, int line, FieldType type) {
 		this.name = name;
 		this.data = data.stripTrailing().replaceAll("^[ \t]*", "");
+		this.line = line;
 		this.type = type;
 	}
 
@@ -33,30 +35,31 @@ public record DataField(String name, String data, FieldType type) {
 	 * @param lines The data field and any content following it in the control file
 	 * @return The data field, or null if it could not be parsed
 	 */
-	public static DataField parseNext(List<String> lines, Configuration config) {
+	public static DataField parseNext(List<Line> lines, Configuration config) {
 		if(lines.isEmpty()) {
 			Main.error("Missing expected data field: no lines left");
 			return null;
 		}
-		String first = lines.getFirst();
+		int index = lines.getFirst().lineNumber();
+		String first = lines.getFirst().text();
 		String[] parts = first.split(":", 2);
 		String fieldName = parts[0];
 		if(parts.length == 1) {
-			Main.error("Data field declaration is missing colon: " + first);
+			Main.error("Data field declaration is missing colon: " + first, lines.getFirst().lineNumber());
 			return null;
 		}
 		if(config.fieldName && !fieldName.matches("[!-\"$-,.-9;-~][!-9;-~]*")) {
-			Main.error("Invalid field name: " + fieldName, "fieldName", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+			Main.error("Invalid field name: " + fieldName, "fieldName", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", lines.getFirst().lineNumber());
 		}
 		if(config.spaceAfterColon && (!parts[1].startsWith(" ") && !parts[1].isEmpty())) {
-			Main.error("Missing space after colon: " + fieldName, "spaceAfterColon", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+			Main.error("Missing space after colon: " + fieldName, "spaceAfterColon", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", lines.getFirst().lineNumber());
 		}
 		StringBuilder contents = new StringBuilder(parts[1]);
 		lines.removeFirst();
-		ListIterator<String> it = lines.listIterator();
+		ListIterator<Line> it = lines.listIterator();
 		boolean multiline = false;
 		while(it.hasNext()) {
-			String s = it.next();
+			String s = it.next().text();
 			if(s.startsWith(" ") || s.startsWith("\t")) {
 				contents.append("\n");
 				contents.append(s);
@@ -66,7 +69,7 @@ public record DataField(String name, String data, FieldType type) {
 				break;
 			}
 		}
-		return new DataField(fieldName, contents.toString(), multiline ? FieldType.MULTILINE : FieldType.SIMPLE);
+		return new DataField(fieldName, contents.toString(), index, multiline ? FieldType.MULTILINE : FieldType.SIMPLE);
 	}
 
 	/**
@@ -82,14 +85,14 @@ public record DataField(String name, String data, FieldType type) {
 		if(type == this.type) {
 			return this;
 		} else if(this.type == FieldType.MULTILINE && type == FieldType.FOLDED) {
-			return new DataField(name, data.replaceAll("\\s*\\n\\s*", ""), type);
+			return new DataField(name, data.replaceAll("\\s*\\n\\s*", ""), line(), type);
 		} else if(this.type == FieldType.SIMPLE) {
-			return new DataField(name, data, type);
+			return new DataField(name, data, line(), type);
 		} else if(force) {
 			if(type == FieldType.SIMPLE) {
-				return new DataField(name, data.split("\\n", 2)[0], type);
+				return new DataField(name, data.split("\\n", 2)[0], line(), type);
 			} else {
-				return new DataField(name, data, type);
+				return new DataField(name, data, line(), type);
 			}
 		} else {
 			return null;

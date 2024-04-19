@@ -34,6 +34,10 @@ public class Main {
 	 */
 	private static boolean DISPLAY_CHECK = false;
 	/**
+	 * Whether to display the line number where the error occurred.
+	 */
+	private static boolean DISPLAY_LINE_NUMBER = false;
+	/**
 	 * Whether to display a reference to the standard that describes the error.
 	 */
 	private static boolean DISPLAY_REFERENCE = false;
@@ -56,11 +60,34 @@ public class Main {
 	 * Displays an error message, incrementing {@link #ERROR_COUNT}. During testing, throws an {@link IllegalArgumentException}.
 	 *
 	 * @param error The error message
+	 * @param line  The line number to display, or -1
+	 * @throws IllegalArgumentException If testing
+	 */
+	public static synchronized void error(String error, int line) {
+		error(error, null, null, line);
+	}
+
+	/**
+	 * Displays an error message, incrementing {@link #ERROR_COUNT}. During testing, throws an {@link IllegalArgumentException}.
+	 *
+	 * @param error The error message
 	 * @param check The name of the check that generated the error
 	 * @throws IllegalArgumentException If testing
 	 */
 	public static synchronized void error(String error, String check) {
 		error(error, check, null);
+	}
+
+	/**
+	 * Displays an error message, incrementing {@link #ERROR_COUNT}. During testing, throws an {@link IllegalArgumentException}.
+	 *
+	 * @param error The error message
+	 * @param check The name of the check that generated the error
+	 * @param line  The line number to display, or -1
+	 * @throws IllegalArgumentException If testing
+	 */
+	public static synchronized void error(String error, String check, int line) {
+		error(error, check, null, line);
 	}
 
 	/**
@@ -72,6 +99,19 @@ public class Main {
 	 * @throws IllegalArgumentException If testing
 	 */
 	public static synchronized void error(String error, String check, String reference) {
+		error(error, check, reference, -1);
+	}
+
+	/**
+	 * Displays an error message, incrementing {@link #ERROR_COUNT}. During testing, throws an {@link IllegalArgumentException}.
+	 *
+	 * @param error     The error message
+	 * @param check     The name of the check that generated the error
+	 * @param reference The error's description in the standard
+	 * @param line      The line number to display, or -1
+	 * @throws IllegalArgumentException If testing
+	 */
+	public static synchronized void error(String error, String check, String reference, int line) {
 		ERROR_COUNT++;
 		if(IS_TEST) {
 			if(check != null) {
@@ -86,6 +126,9 @@ public class Main {
 				sb.append('[').append(check).append("] ");
 			}
 			sb.append(error);
+			if(DISPLAY_LINE_NUMBER && line != -1) {
+				sb.append(" {").append("around line ").append(line).append('}');
+			}
 			if(DISPLAY_REFERENCE && reference != null) {
 				sb.append(" <").append(reference).append('>');
 			}
@@ -207,11 +250,11 @@ public class Main {
 		info("""
 				     Debian control file linter by tibetiroka
 				     Usage: debian-control-linter [OPTION] [FILE]
-				     		
+				     
 				     Arguments:
 				      [FILE]
 				     		The file to lint; can also be supplied via a '--file' option. Each control file type also has a default file associated with it that is used if no file is specified. If the file is '-' and it doesn't exist, read from standard input.
-				     					
+				     
 				     Options:
 				      -h, --help
 				     		Show this help message and exit.
@@ -235,8 +278,8 @@ public class Main {
 				     		Prints information about a specific control file type, including a short description and the default file name.
 				      --check-info <check>
 				     		Prints information about a specific check.
-				      --display <check|reference|both|neither>
-				     		Configures how error messages are displayed. Check names are displayed in square brackets before the error text, and references to the standard are displayed in angle brackets after the error body. The default value is 'neither'. Display values are case-insensitive.
+				      --display <check|reference|line|all|none>
+				     		Configures how error messages are displayed. Check names are displayed in square brackets before the error text, and references to the standard are displayed in angle brackets after the error body. Line numbers are displayed in curly brackets before the references. The default value is 'none'. Display values are case-insensitive. Multiple values can be specified using a comma-separated list.
 				      """);
 		System.exit(0);
 	}
@@ -331,11 +374,7 @@ public class Main {
 			processors.add((param, value) -> {
 				if(param.equals("--check-info")) {
 					try {
-						Field fi = Arrays.stream(Configuration.ConfigOptionDetails.class.getDeclaredFields())
-						                 .filter(f -> f.getType() == String.class)
-						                 .filter(f -> f.getName().equalsIgnoreCase(value))
-						                 .findAny()
-						                 .get();
+						Field fi = Arrays.stream(Configuration.ConfigOptionDetails.class.getDeclaredFields()).filter(f -> f.getType() == String.class).filter(f -> f.getName().equalsIgnoreCase(value)).findAny().get();
 						info((String) fi.get(null));
 						info("Presets enabling this check by default:");
 						for(Field field : Configuration.class.getDeclaredFields()) {
@@ -376,11 +415,7 @@ public class Main {
 						String trimmedOption = check.trim();
 						if(!check.isEmpty()) {
 							try {
-								Field field = Arrays.stream(Configuration.class.getDeclaredFields())
-								                    .filter(f -> f.getType() == boolean.class)
-								                    .filter(f -> f.getName().equalsIgnoreCase(trimmedOption))
-								                    .findAny()
-								                    .get();
+								Field field = Arrays.stream(Configuration.class.getDeclaredFields()).filter(f -> f.getType() == boolean.class).filter(f -> f.getName().equalsIgnoreCase(trimmedOption)).findAny().get();
 								field.set(config[0], enable);
 							} catch(NoSuchElementException | IllegalAccessException ex) {
 								warn("Cannot set unknown check: " + check);
@@ -418,24 +453,23 @@ public class Main {
 			});
 			processors.add((param, value) -> {
 				if(param.equals("--display")) {
-					switch(value.toLowerCase()) {
-						case "check" -> {
-							DISPLAY_CHECK = true;
-							DISPLAY_REFERENCE = false;
+					for(String s : value.toLowerCase().split(",")) {
+						switch(s) {
+							case "check" -> DISPLAY_CHECK = true;
+							case "reference" -> DISPLAY_REFERENCE = true;
+							case "line" -> DISPLAY_LINE_NUMBER = true;
+							case "none" -> {
+								DISPLAY_CHECK = false;
+								DISPLAY_REFERENCE = false;
+								DISPLAY_LINE_NUMBER = false;
+							}
+							case "all" -> {
+								DISPLAY_CHECK = true;
+								DISPLAY_REFERENCE = true;
+								DISPLAY_LINE_NUMBER = true;
+							}
+							default -> Main.warn("Unknown value for --display: " + value);
 						}
-						case "reference" -> {
-							DISPLAY_CHECK = false;
-							DISPLAY_REFERENCE = true;
-						}
-						case "neither" -> {
-							DISPLAY_CHECK = false;
-							DISPLAY_REFERENCE = false;
-						}
-						case "both" -> {
-							DISPLAY_CHECK = true;
-							DISPLAY_REFERENCE = true;
-						}
-						default -> Main.warn("Unknown value for --display: " + value);
 					}
 					return true;
 				}

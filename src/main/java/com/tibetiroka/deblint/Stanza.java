@@ -23,6 +23,19 @@ public class Stanza {
 	 * The list of data fields in this stanza.
 	 */
 	public final List<DataField> dataFields = new ArrayList<>();
+	/**
+	 * The line number of the first line in this stanza.
+	 */
+	private final int firstLine;
+
+	/**
+	 * Creates a new stanza beginning at the specified line.
+	 *
+	 * @param firstLine The number of the first line
+	 */
+	private Stanza(int firstLine) {
+		this.firstLine = firstLine;
+	}
 
 	/**
 	 * Parses the next stanza, removing it from the list of lines. The lines must begin with a stanza.
@@ -31,21 +44,22 @@ public class Stanza {
 	 * @param config The configuration
 	 * @return The stanza or null if it could not be parsed
 	 */
-	public static Stanza parseNext(List<String> lines, Configuration config) {
-		Stanza s = new Stanza();
+	public static Stanza parseNext(List<Line> lines, Configuration config) {
+		Stanza s = new Stanza(lines.getFirst().lineNumber());
 		Pattern empty = Pattern.compile("^[ \\t]*$");
 		HashSet<String> fieldNames = new HashSet<>();
-		while(!lines.isEmpty() && !empty.matcher(lines.getFirst()).matches()) {
+		while(!lines.isEmpty() && !empty.matcher(lines.getFirst().text()).matches()) {
+			int index = lines.getFirst().lineNumber();
 			DataField field = DataField.parseNext(lines, config);
 			if(field != null) {
 				if(fieldNames.contains(field.name().toUpperCase())) {
 					if(config.duplicateField) {
-						Main.error("Duplicate data field in stanza: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+						Main.error("Duplicate data field in stanza: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", index);
 					}
 				} else {
 					if(config.emptyFields) {
 						if(field.data().isEmpty()) {
-							Main.error("Empty data field: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+							Main.error("Empty data field: " + field.name(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", index);
 						}
 					}
 					s.dataFields.add(field);
@@ -55,7 +69,7 @@ public class Stanza {
 				break;
 			}
 		}
-		while(!lines.isEmpty() && empty.matcher(lines.getFirst()).matches()) {
+		while(!lines.isEmpty() && empty.matcher(lines.getFirst().text()).matches()) {
 			lines.removeFirst();
 		}
 		if(s.dataFields.isEmpty()) {
@@ -72,6 +86,15 @@ public class Stanza {
 	 */
 	public DataField getField(String name) {
 		return dataFields.stream().filter(field -> field.name().equalsIgnoreCase(name)).findAny().orElse(null);
+	}
+
+	/**
+	 * Gets the line number of the first line of the stanza.
+	 *
+	 * @return The line number
+	 */
+	public int getFirstLine() {
+		return firstLine;
 	}
 
 	@Override

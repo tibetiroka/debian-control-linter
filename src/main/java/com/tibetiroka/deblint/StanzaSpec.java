@@ -59,14 +59,14 @@ public record StanzaSpec(String name, boolean mandatory, boolean repeatable, Map
 				s.dataFields.remove(field);
 				if(proper == null) {
 					if(config.fieldType) {
-						Main.error("Invalid field type for field " + name + ": expected " + spec.type() + ", found " + field.type(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+						Main.error("Invalid field type for field " + name + ": expected " + spec.type() + ", found " + field.type(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", field.line());
 					}
 					s.dataFields.add(field.changeType(spec.type(), true));
 				} else {
 					s.dataFields.add(proper);
 				}
 			} else if(config.recommendedFields && spec.required() == RequirementStatus.RECOMMENDED) {
-				Main.error("Missing recommended field: " + name, "recommendedFields");
+				Main.error("Missing recommended field: " + name, "recommendedFields", s.getFirstLine());
 			}
 		}
 		if(config.customFields) {
@@ -79,16 +79,16 @@ public record StanzaSpec(String name, boolean mandatory, boolean repeatable, Map
 					}
 				}
 				if(!found) {
-					Main.error("Custom field: " + field.name(), "customFields");
+					Main.error("Custom field: " + field.name(), "customFields", field.line());
 					if(config.customFieldNames) {
 						if(!field.name().matches("X[BCS]{1,3}-.+")) {
-							Main.error("Invalid custom field name: " + field.name(), "customFieldNames", "https://www.debian.org/doc/debian-policy/ch-controlfields#user-defined-fields");
+							Main.error("Invalid custom field name: " + field.name(), "customFieldNames", "https://www.debian.org/doc/debian-policy/ch-controlfields#user-defined-fields", field.line());
 						} else {
 							String prefix = field.name().split("-", 2)[0];
 							char[] chars = {'B', 'C', 'S'};
 							for(char c : chars) {
 								if(prefix.indexOf(c) != prefix.lastIndexOf(c)) {
-									Main.error("Duplicate marker in custom field name : " + c + " " + field.name(), "customFieldNames", "https://www.debian.org/doc/debian-policy/ch-controlfields#user-defined-fields");
+									Main.error("Duplicate marker in custom field name : " + c + " " + field.name(), "customFieldNames", "https://www.debian.org/doc/debian-policy/ch-controlfields#user-defined-fields", field.line());
 								}
 							}
 						}

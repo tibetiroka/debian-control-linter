@@ -66,12 +66,12 @@ class Linters {
 	 */
 	public static final String[] systems = Arrays.stream(architectures).map(a -> a.indexOf('-') == a.lastIndexOf('-') ? a.split("-")[0] : a.split("-")[1]).toArray(String[]::new);
 	protected static final FieldLinter ARCHITECTURE_LINTER = (s, config) -> {
-		boolean inverted = s.contains("!");
-		String[] declared = s.split(" ");
+		boolean inverted = s.text().contains("!");
+		String[] declared = s.text().split(" ");
 		if(config.archInversion) {
 			for(String arch : declared) {
 				if(inverted && !arch.startsWith("!")) {
-					Main.error("Architecture names must all be prepended with exclamation marks, or not at all: " + s, "archInversion", "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+					Main.error("Architecture names must all be prepended with exclamation marks, or not at all: " + s, "archInversion", "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture", s.lineNumber());
 				}
 			}
 		}
@@ -89,54 +89,54 @@ class Linters {
 				if(arch.endsWith("-any")) {
 					String os = arch.substring(0, arch.length() - "-any".length());
 					if(!supOs.contains(os)) {
-						Main.error("Wildcard does not match any architecture: " + arch, "strictArch", "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec");
+						Main.error("Wildcard does not match any architecture: " + arch, "strictArch", "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec", s.lineNumber());
 					}
 				} else if(arch.startsWith("any-")) {
 					String cpu = arch.substring("any-".length());
 					if(!supCpu.contains(cpu)) {
-						Main.error("Wildcard does not match any architecture: " + arch, "strictArch", "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec");
+						Main.error("Wildcard does not match any architecture: " + arch, "strictArch", "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec", s.lineNumber());
 					}
 				} else {
 					if(!supArch.contains(arch)) {
-						Main.error("Unknown architecture: " + arch, "strictArch");
+						Main.error("Unknown architecture: " + arch, "strictArch", s.lineNumber());
 					}
 				}
 			} else {
 				if(!Pattern.matches("^[a-zA-Z0-9\\-]+$", arch)) {
-					Main.error("Invalid architecture: " + arch);
+					Main.error("Invalid architecture: " + arch, s.lineNumber());
 				}
 			}
 		}
 	};
 	protected static final FieldLinter SINGLE_ARCHITECTURE_LINTER = (s, config) -> {
-		ArrayList<String> arches = new ArrayList<>(List.of(s.split(" ")));
+		ArrayList<String> arches = new ArrayList<>(List.of(s.text().split(" ")));
 		if(config.duplicateArchitecture && arches.size() > new HashSet<>(arches).size()) {
-			Main.error("Duplicated architecture: " + s, "duplicateArchitecture");
+			Main.error("Duplicated architecture: " + s, "duplicateArchitecture", s.lineNumber());
 		}
 		if(config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL) {
-			if(!s.equals("all") && !s.equals("any")) {
+			if(!s.text().equals("all") && !s.text().equals("any")) {
 				if(arches.stream().anyMatch(a -> a.equals("all") || a.equals("any"))) {
-					Main.error("'all' or 'any' must be the only entries, if present: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+					Main.error("'all' or 'any' must be the only entries, if present: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture", s.lineNumber());
 				} else {
-					ARCHITECTURE_LINTER.accept(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), config);
+					ARCHITECTURE_LINTER.accept(new Line(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), s.lineNumber()), config);
 				}
 			}
 		} else if(config.checkedType == ControlType.SOURCE_CONTROL) {
 			if(arches.contains("any")) {
 				if(!arches.stream().allMatch(a -> a.equals("any") || a.equals("all"))) {
-					Main.error("When 'any' is present in a list, the only other value allowed is 'all': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+					Main.error("When 'any' is present in a list, the only other value allowed is 'all': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture", s.lineNumber());
 				}
 			} else {
-				ARCHITECTURE_LINTER.accept(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), config);
+				ARCHITECTURE_LINTER.accept(new Line(String.join(" ", arches.stream().filter(a -> !a.equals("all")).toList()), s.lineNumber()), config);
 			}
 		} else if(config.checkedType == ControlType.CHANGES) {
 			HashSet<String> archSet = new HashSet<>(arches);
 			archSet.remove("source");
 			if(archSet.contains("any") || archSet.stream().anyMatch(a -> a.startsWith("any-") || a.endsWith("-any"))) {
-				Main.error("Architecture wildcards are not allowed in .changes files: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture");
+				Main.error("Architecture wildcards are not allowed in .changes files: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#architecture", s.lineNumber());
 			} else {
 				if(!archSet.isEmpty()) {
-					ARCHITECTURE_LINTER.accept(String.join(" ", archSet), config);
+					ARCHITECTURE_LINTER.accept(new Line(String.join(" ", archSet), s.lineNumber()), config);
 				}
 			}
 		} else {
@@ -146,23 +146,23 @@ class Linters {
 	protected static final FieldLinter BINARY_LIST_LINTER = (s, config) -> {
 		HashSet<String> files = new HashSet<>();
 		if(config.checkedType == ControlType.SOURCE_CONTROL) {
-			for(String string : s.split(",")) {
+			for(String string : s.text().split(",")) {
 				string = string.strip();
 				if(string.isEmpty()) {
-					Main.error("Empty file name: " + s);
+					Main.error("Empty file name: " + s, s.lineNumber());
 				} else if(config.duplicateFiles && files.contains(string)) {
-					Main.error("Duplicated file in list: " + s, "duplicateFiles");
+					Main.error("Duplicated file in list: " + s, "duplicateFiles", s.lineNumber());
 				} else {
 					files.add(string);
 				}
 			}
 		} else if(config.checkedType == ControlType.CHANGES) {
-			for(String string : s.split(" ")) {
+			for(String string : s.text().split(" ")) {
 				string = string.strip();
 				if(string.isEmpty()) {
-					Main.error("Empty file name: " + s);
+					Main.error("Empty file name: " + s, s.lineNumber());
 				} else if(config.duplicateFiles && files.contains(string)) {
-					Main.error("Duplicated file in list: " + s, "duplicateFiles");
+					Main.error("Duplicated file in list: " + s, "duplicateFiles", s.lineNumber());
 				} else {
 					files.add(string);
 				}
@@ -170,42 +170,42 @@ class Linters {
 		}
 	};
 	protected static final FieldLinter BOOLEAN_LINTER = (s, config) -> {
-		if(!s.equals("yes") && !s.equals("no")) {
-			Main.error("Invalid boolean value; should be 'yes' or 'no': " + s, null, "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec");
+		if(!s.text().equals("yes") && !s.text().equals("no")) {
+			Main.error("Invalid boolean value; should be 'yes' or 'no': " + s, null, "https://www.debian.org/doc/debian-policy/ch-customized-programs.html#s-arch-wildcard-spec", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter CHANGE_LIST_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n", -1);
+		String[] lines = s.text().split("\\n", -1);
 		if(config.leadingEmptyLine && !lines[0].isBlank()) {
-			Main.error("The first line of changes should be empty", "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#changes");
+			Main.error("The first line of changes should be empty", "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#changes", s.lineNumber());
 		}
 		//todo: check all title requirements from https://www.debian.org/doc/debian-policy/ch-controlfields#changes
 	};
 	protected static final FieldLinter COPYRIGHT_FILE_LIST_LINTER = (s, config) -> {
-		String[] patterns = s.split("\\n", -1);
+		String[] patterns = s.text().split("\\n", -1);
 		for(String pattern : patterns) {
 			pattern = pattern.strip();
 			if(Pattern.matches(".*\\\\[^\\\\*?].*", pattern)) {
-				Main.error("Illegal escape sequence: " + pattern, null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field");
+				Main.error("Illegal escape sequence: " + pattern, null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field", s.lineNumber());
 			}
 			if(Pattern.matches(".*\\s.*", pattern)) {
-				Main.error("Illegal whitespace in pattern: " + pattern, null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field");
+				Main.error("Illegal whitespace in pattern: " + pattern, null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter DATE_LINTER = (s, config) -> {
 		// day-of-week, dd month yyyy hh:mm:ss +zzzz
-		if(!Pattern.matches("^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d\\d? (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4}$", s)) {
-			Main.error("Invalid date: " + s);
+		if(!Pattern.matches("^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d\\d? (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4}$", s.text())) {
+			Main.error("Invalid date: " + s, s.lineNumber());
 		} else {
 			try {
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd LLL yyyy HH:mm:ss Z");
-				ZonedDateTime parsed = ZonedDateTime.parse(s, formatter);
+				ZonedDateTime parsed = ZonedDateTime.parse(s.text(), formatter);
 				if(config.futureDate && ZonedDateTime.now().isBefore(parsed)) {
-					Main.error("Future date specified: " + s);
+					Main.error("Future date specified: " + s, s.lineNumber());
 				}
 			} catch(DateTimeException e) {
-				Main.error("Invalid date: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#date");
+				Main.error("Invalid date: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#date", s.lineNumber());
 			}
 		}
 	};
@@ -215,36 +215,36 @@ class Linters {
 	protected static final FieldLinter DEFAULT_LINTER = (s, config) -> {
 	};
 	protected static final FieldLinter DESCRIPTION_LINTER = (s, config) -> {
-		String[] lines = s.split("\n");
+		String[] lines = s.text().split("\n");
 		if(lines[0].isBlank()) {
-			Main.error("Missing synopsys: ", null, "https://www.debian.org/doc/debian-policy/ch-controlfields#description");
+			Main.error("Missing synopsys: ", null, "https://www.debian.org/doc/debian-policy/ch-controlfields#description", s.lineNumber());
 		}
 		if(config.descriptionReservedSyntax) {
 			for(int i = 1; i < lines.length; i++) {
 				if(lines[i].startsWith(" .") && !" .".equals(lines[i])) {
-					Main.error("Use of reserved syntax: " + lines[i], "descriptionReservedSyntax", "https://www.debian.org/doc/debian-policy/ch-controlfields#description");
+					Main.error("Use of reserved syntax: " + lines[i], "descriptionReservedSyntax", "https://www.debian.org/doc/debian-policy/ch-controlfields#description", s.lineNumber());
 				}
 			}
 		}
 	};
 	protected static final FieldLinter DGIT_LINTER = (s, config) -> {
-		String[] parts = s.split(" ");
+		String[] parts = s.text().split(" ");
 		if(config.dgitExtraData && parts.length > 1) {
-			Main.error("Extra data after the commit hash is reserved for future expansion; do not use: " + s, "dgitExtraData", "https://www.debian.org/doc/debian-policy/ch-controlfields#dgit");
+			Main.error("Extra data after the commit hash is reserved for future expansion; do not use: " + s, "dgitExtraData", "https://www.debian.org/doc/debian-policy/ch-controlfields#dgit", s.lineNumber());
 		}
 		if(!Pattern.matches("^[a-f0-9]{40}$", parts[0])) {
-			Main.error("Invalid git hash: " + parts[0]);
+			Main.error("Invalid git hash: " + parts[0], s.lineNumber());
 		}
 	};
 	protected static final FieldLinter DISTRIBUTION_LINTER = (s, config) -> {
-		if(config.multipleDistributions && s.contains(" ")) {
-			Main.error("Please only use a single distribution: " + s, "multipleDistributions", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-distribution");
+		if(config.multipleDistributions && s.text().contains(" ")) {
+			Main.error("Please only use a single distribution: " + s, "multipleDistributions", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-distribution", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter LICENSE_LINTER = (s, config) -> {
-		String[] parts = s.split("\\n");
-		if(s.split("\\n")[0].isBlank()) {
-			Main.error("License must have a short name in the first line: ", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-field");
+		String[] parts = s.text().split("\\n");
+		if(s.text().split("\\n")[0].isBlank()) {
+			Main.error("License must have a short name in the first line: ", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-field", s.lineNumber());
 		} else {
 			if(config.licenseName) {
 				String shortNames = parts[0].strip().replace(",", "");
@@ -252,129 +252,129 @@ class Linters {
 					if(name.contains(" ")) {
 						String[] nameParts = name.split(" ");
 						if(nameParts.length != 4) {
-							Main.error("Invalid license exception: " + name, "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name");
+							Main.error("Invalid license exception: " + name, "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name", s.lineNumber());
 						} else {
 							if(!nameParts[1].equals("with") || !nameParts[3].equals("exception")) {
-								Main.error("Invalid license exception: " + name, "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name");
+								Main.error("Invalid license exception: " + name, "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name", s.lineNumber());
 							}
 							if(config.customLicenseException) {
 								String[] exceptions = {"Font", "OpenSSL"};
 								if(Arrays.stream(exceptions).noneMatch(e -> e.equals(nameParts[2]))) {
-									Main.error("Unknown license exception: " + nameParts[2], "customLicenseException");
+									Main.error("Unknown license exception: " + nameParts[2], "customLicenseException", s.lineNumber());
 								}
 							}
 						}
 					} else if(name.equals("public-domain") && parts.length == 1) {
-						Main.error("Licensing to public domain must be followed by an explanation", "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name");
+						Main.error("Licensing to public domain must be followed by an explanation", "licenseName", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#license-short-name", s.lineNumber());
 					}
 				}
 			}
 		}
 	};
 	protected static final FieldLinter MD5_LINTER = (s, config) -> {
-		if(!Pattern.matches("^[a-fA-F0-9]{32}$", s)) {
-			Main.error("Invalid MD5 hash: " + s);
+		if(!Pattern.matches("^[a-fA-F0-9]{32}$", s.text())) {
+			Main.error("Invalid MD5 hash: " + s, s.lineNumber());
 		}
 	};
 	protected static final FieldLinter NUMBER_LIST_LINTER = (s, config) -> {
-		String[] parts = s.split(" ");
+		String[] parts = s.text().split(" ");
 		HashSet<Integer> numbers = new HashSet<>();
 		for(String part : parts) {
 			try {
 				int i = Integer.parseInt(part);
 				if(part.startsWith("+")) {
-					Main.error("Numbers should be unsigned: " + part);
+					Main.error("Numbers should be unsigned: " + part, s.lineNumber());
 				} else if(i <= 0) {
-					Main.error("Numbers should not be negative: " + part);
+					Main.error("Numbers should not be negative: " + part, s.lineNumber());
 				} else {
 					if(config.duplicateIssueNumbers && numbers.contains(i)) {
-						Main.error("Duplicate number: " + part, "duplicateIssueNumbers");
+						Main.error("Duplicate number: " + part, "duplicateIssueNumbers", s.lineNumber());
 					} else {
 						numbers.add(i);
 					}
 				}
 			} catch(NumberFormatException e) {
-				Main.error("Invalid number: " + part);
+				Main.error("Invalid number: " + part, s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter PACKAGE_NAME_LINTER = (s, config) -> {
-		if(!Pattern.matches("^[a-z0-9][a-z0-9+.\\-]+$", s)) {
-			Main.error("Invalid package name: " + s);
+		if(!Pattern.matches("^[a-z0-9][a-z0-9+.\\-]+$", s.text())) {
+			Main.error("Invalid package name: " + s, s.lineNumber());
 		}
 	};
 	protected static final FieldLinter PACKAGE_TYPE_LINTER = (s, config) -> {
-		if(config.unknownPackageType && !s.equals("deb") && !s.equals("udeb")) {
-			Main.error("Unknown package type: " + s, "unknownPackageType");
+		if(config.unknownPackageType && !s.text().equals("deb") && !s.text().equals("udeb")) {
+			Main.error("Unknown package type: " + s, "unknownPackageType", s.lineNumber());
 		}
-		if(config.redundantPackageType && s.equals("deb") && config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL) {
-			Main.error("Package-Type should be omitted when using the default value: " + s, "redundantPackageType", "https://www.debian.org/doc/debian-policy/ch-controlfields#package-type");
+		if(config.redundantPackageType && s.text().equals("deb") && config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL) {
+			Main.error("Package-Type should be omitted when using the default value: " + s, "redundantPackageType", "https://www.debian.org/doc/debian-policy/ch-controlfields#package-type", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter PRIORITY_LINTER = (s, config) -> {
 		if(config.unknownPriority) {
 			String[] priorities = {"required", "important", "standard", "optional", "extra"};
-			if(Arrays.stream(priorities).noneMatch(p -> p.equals(s))) {
-				Main.error("Unknown priority: " + s, "unknownPriority", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities");
+			if(Arrays.stream(priorities).noneMatch(p -> p.equals(s.text()))) {
+				Main.error("Unknown priority: " + s, "unknownPriority", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities", s.lineNumber());
 			}
 		}
-		if(config.extraPriority && s.equals("extra")) {
-			Main.error("The 'extra' priority is deprecated, use 'optional' instead", "extraPriority", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities");
+		if(config.extraPriority && s.text().equals("extra")) {
+			Main.error("The 'extra' priority is deprecated, use 'optional' instead", "extraPriority", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-priorities", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter REQUIRES_ROOT_LINTER = (s, config) -> {
-		if(s.equals("no") || s.equals("binary-targets")) {
+		if(s.text().equals("no") || s.text().equals("binary-targets")) {
 			return;
 		}
-		String[] keywords = s.split(" ");
+		String[] keywords = s.text().split(" ");
 		String ascii_printable = "!-.0-~";
 		Pattern pattern = Pattern.compile("^[" + ascii_printable + "]{2,}/[" + ascii_printable + "/]{2,}$");
 		for(String keyword : keywords) {
 			if(!pattern.matcher(keyword).matches()) {
-				Main.error("Invalid keyword for Rules-Requires-Root: " + keyword, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-rules-requires-root");
+				Main.error("Invalid keyword for Rules-Requires-Root: " + keyword, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-rules-requires-root", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter RFC_822_LINTER = (s, config) -> {
 		if(config.email) {
 			try {
-				InternetAddress emailAddr = new InternetAddress(s);
+				InternetAddress emailAddr = new InternetAddress(s.text());
 				emailAddr.validate();
 			} catch(AddressException e) {
-				Main.error("Invalid email address: " + s, "email", "https://www.w3.org/Protocols/rfc822/");
+				Main.error("Invalid email address: " + s, "email", "https://www.w3.org/Protocols/rfc822/", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter ADDRESS_LINTER = (s, config) -> {
 		if(config.addressStyle) {
-			int begin = s.indexOf('<');
-			int end = s.lastIndexOf('>');
+			int begin = s.text().indexOf('<');
+			int end = s.text().lastIndexOf('>');
 			if(begin == -1 || end == -1 || end < begin) {
-				Main.error("Missing email address: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer");
+				Main.error("Missing email address: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer", s.lineNumber());
 			} else {
-				RFC_822_LINTER.accept(s.substring(begin + 1, end), config);
+				RFC_822_LINTER.accept(new Line(s.text().substring(begin + 1, end), s.lineNumber()), config);
 			}
-			if(end != s.length() - 1) {
-				Main.error("Extra content after email address: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer");
+			if(end != s.text().length() - 1) {
+				Main.error("Extra content after email address: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer", s.lineNumber());
 			}
-			if(config.maintainerNameFullStop && s.substring(0, begin).contains(".")) {
-				Main.error("Name contains full stop: " + s.substring(0, begin), "maintainerNameFullStop", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer");
+			if(config.maintainerNameFullStop && s.text().substring(0, begin).contains(".")) {
+				Main.error("Name contains full stop: " + s.text().substring(0, begin), "maintainerNameFullStop", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer", s.lineNumber());
 			}
 			if(begin == 0) {
-				Main.error("Missing name: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer");
+				Main.error("Missing name: " + s, "addressStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#maintainer", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter MULTI_ADDRESS_LINTER = (s, config) -> {
-		for(String address : s.split(",", -1)) {
-			ADDRESS_LINTER.accept(address, config);
+		for(String address : s.text().split(",", -1)) {
+			ADDRESS_LINTER.accept(new Line(address, s.lineNumber()), config);
 		}
 	};
 	protected static final FieldLinter UPSTREAM_CONTACT_LINTER = (s, config) -> {
 		if(config.upstreamContactStyle) {
 			try {
-				URL u = new URI(s).toURL();
-				checkUrl(u, config);
+				URL u = new URI(s.text()).toURL();
+				checkUrl(u, s.lineNumber(), config);
 			} catch(URISyntaxException | MalformedURLException | IllegalArgumentException e) {
 				ADDRESS_LINTER.accept(s, config);
 			}
@@ -384,40 +384,40 @@ class Linters {
 		String[] areas = {"contrib", "non-free"};
 		String[] sections = {"admin", "cli-mono", "comm", "database", "debian-installer", "debug", "devel", "doc", "editors", "education", "electronics", "embedded", "fonts", "games", "gnome", "gnu-r", "gnustep", "graphics", "hamradio", "haskell", "httpd", "interpreters", "introspection", "java", "javascript", "kde", "kernel", "libdevel", "libs", "lisp", "localization", "mail", "math", "metapackages", "misc", "net", "news", "ocaml", "oldlibs", "otherosfs", "perl", "php", "python", "ruby", "rust", "science", "shells", "sound", "tasks", "tex", "text", "utils", "vcs", "video", "web", "x11", "xfce", "zope"};
 		String section;
-		if(s.contains("/")) {
-			String[] parts = s.split("/", 2);
+		if(s.text().contains("/")) {
+			String[] parts = s.text().split("/", 2);
 			if(config.strictSection && Arrays.stream(areas).noneMatch(a -> a.equals(parts[0]))) {
-				Main.error("Unknown area: " + s, "strictSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections");
+				Main.error("Unknown area: " + s, "strictSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections", s.lineNumber());
 			}
 			section = parts[1];
 		} else {
-			section = s;
+			section = s.text();
 		}
 		if(config.strictSection && Arrays.stream(sections).noneMatch(a -> a.equals(section))) {
-			Main.error("Unknown section: " + s, "strictSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections");
+			Main.error("Unknown section: " + s, "strictSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections", s.lineNumber());
 		}
 		if(config.debianInstallerSection && section.equals("debian-installer")) {
-			Main.error("debian-installer section should not be used here: " + s, "debianInstallerSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections");
+			Main.error("debian-installer section should not be used here: " + s, "debianInstallerSection", "https://www.debian.org/doc/debian-policy/ch-archive.html#s-subsections", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter PACKAGE_LIST_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n", -1);
+		String[] lines = s.text().split("\\n", -1);
 		if(config.leadingEmptyLine && !lines[0].isBlank()) {
-			Main.error("Package-List must begin with an empty line: " + s, "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-package-list");
+			Main.error("Package-List must begin with an empty line: " + s, "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-package-list", s.lineNumber());
 		}
 		HashSet<String> binaries = new HashSet<>();
 		for(int i = 1; i < lines.length; i++) {
 			String[] parts = lines[i].strip().split(" ");
 			// name, type, section, priority
 			if(parts.length < 4) {
-				Main.error("Missing values from package; 4 values are required: " + lines[i].strip(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-package-list");
+				Main.error("Missing values from package; 4 values are required: " + lines[i].strip(), null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-package-list", s.lineNumber());
 			} else {
-				PACKAGE_NAME_LINTER.accept(parts[0], config);
-				PACKAGE_TYPE_LINTER.accept(parts[1], config);
-				SECTION_LINTER.accept(parts[2], config);
-				PRIORITY_LINTER.accept(parts[3], config);
+				PACKAGE_NAME_LINTER.accept(new Line(parts[0], s.lineNumber()), config);
+				PACKAGE_TYPE_LINTER.accept(new Line(parts[1], s.lineNumber()), config);
+				SECTION_LINTER.accept(new Line(parts[2], s.lineNumber()), config);
+				PRIORITY_LINTER.accept(new Line(parts[3], s.lineNumber()), config);
 				if(config.duplicatePackages && binaries.contains(parts[0])) {
-					Main.error("Duplicate package in list: " + parts[0], "duplicatePackages");
+					Main.error("Duplicate package in list: " + parts[0], "duplicatePackages", s.lineNumber());
 				} else {
 					binaries.add(parts[0]);
 				}
@@ -426,26 +426,26 @@ class Linters {
 	};
 	protected static final FieldLinter SIZE_LINTER = (s, config) -> {
 		try {
-			Long l = Long.parseLong(s);
+			Long l = Long.parseLong(s.text());
 			if(l < 0) {
-				Main.error("Size cannot be negative: " + s);
-			} else if(s.startsWith("+")) {
-				Main.error("Size must be unsigned: " + s);
+				Main.error("Size cannot be negative: " + s, s.lineNumber());
+			} else if(s.text().startsWith("+")) {
+				Main.error("Size must be unsigned: " + s, s.lineNumber());
 			}
 		} catch(NumberFormatException e) {
-			Main.error("Invalid size: " + s);
+			Main.error("Invalid size: " + s, s.lineNumber());
 		}
 	};
 	protected static final FieldLinter FILE_LIST_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n");
+		String[] lines = s.text().split("\\n");
 		if(config.leadingEmptyLine && !lines[0].isBlank()) {
-			Main.error("The first line of 'Files' should be empty: " + s, "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+			Main.error("The first line of 'Files' should be empty: " + s, "leadingEmptyLine", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 		}
 		if(config.fileListIndent) {
 			Pattern indent = Pattern.compile("^ \\w.*");
 			for(int i = 1; i < lines.length; i++) {
 				if(!indent.matcher(lines[i]).matches()) {
-					Main.error("Lines should be indented with only one space: " + lines[i], "fileListIndent", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+					Main.error("Lines should be indented with only one space: " + lines[i], "fileListIndent", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 				}
 			}
 		}
@@ -455,39 +455,39 @@ class Linters {
 			String[] stuffs = words[i];
 			if(config.checkedType == ControlType.SOURCE_CONTROL) {
 				if(stuffs.length < 3) {
-					Main.error("Missing parameter: 3 values required: " + lines[i], null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+					Main.error("Missing parameter: 3 values required: " + lines[i], null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 				} else {
-					MD5_LINTER.accept(stuffs[0], config);
-					SIZE_LINTER.accept(stuffs[1], config);
+					MD5_LINTER.accept(new Line(stuffs[0], s.lineNumber()), config);
+					SIZE_LINTER.accept(new Line(stuffs[1], s.lineNumber()), config);
 					if(config.duplicateFiles && filenames.contains(stuffs[2])) {
-						Main.error("Duplicated file in list: " + stuffs[2]);
+						Main.error("Duplicated file in list: " + stuffs[2], s.lineNumber());
 					} else {
 						filenames.add(stuffs[2]);
 					}
 				}
 			} else if(config.checkedType == ControlType.CHANGES) {
 				if(stuffs.length < 3) {
-					Main.error("Missing parameter: 5 values required: " + lines[i], null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+					Main.error("Missing parameter: 5 values required: " + lines[i], null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 				} else {
-					MD5_LINTER.accept(stuffs[0], config);
-					SIZE_LINTER.accept(stuffs[1], config);
+					MD5_LINTER.accept(new Line(stuffs[0], s.lineNumber()), config);
+					SIZE_LINTER.accept(new Line(stuffs[1], s.lineNumber()), config);
 					if(stuffs[2].equals("-")) {
 						if(config.missingSectionOrPriority) {
-							Main.error("Section must be defined: " + stuffs[2], "missingSectionOrPriority", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+							Main.error("Section must be defined: " + stuffs[2], "missingSectionOrPriority", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 						}
 					} else if(stuffs[2].equals("byhand")) {
 						if(!stuffs[3].equals("-")) {
-							Main.error("Priority must be '-' if section is 'byhand': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+							Main.error("Priority must be '-' if section is 'byhand': " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 						}
 					} else {
-						SECTION_LINTER.accept(stuffs[2], config);
-						PRIORITY_LINTER.accept(stuffs[3], config);
+						SECTION_LINTER.accept(new Line(stuffs[2], s.lineNumber()), config);
+						PRIORITY_LINTER.accept(new Line(stuffs[3], s.lineNumber()), config);
 						if(config.missingSectionOrPriority && stuffs[3].equals("-")) {
-							Main.error("Priority must be defined: " + stuffs[2], "missingPriority", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files");
+							Main.error("Priority must be defined: " + stuffs[2], "missingPriority", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-files", s.lineNumber());
 						}
 					}
 					if(config.duplicateFiles && filenames.contains(stuffs[4])) {
-						Main.error("Duplicated file in list: " + stuffs[4], "duplicateFiles");
+						Main.error("Duplicated file in list: " + stuffs[4], "duplicateFiles", s.lineNumber());
 					} else {
 						filenames.add(stuffs[4]);
 					}
@@ -496,58 +496,58 @@ class Linters {
 		}
 	};
 	protected static final FieldLinter SHA1_LINTER = (s, config) -> {
-		String[] lines = s.split("\\n");
+		String[] lines = s.text().split("\\n");
 		if(config.leadingEmptyLine && !lines[0].isBlank()) {
-			Main.error("The first line of checksums should be empty", "leadingEmptyLine");
+			Main.error("The first line of checksums should be empty", "leadingEmptyLine", s.lineNumber());
 		}
 		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
 			String[] parts = l.split(" ", 3);
 			if(parts.length < 3) {
-				Main.error("Missing parameter; 3 values required: " + l);
+				Main.error("Missing parameter; 3 values required: " + l, s.lineNumber());
 				return;
 			}
 			if(!Pattern.matches("^[a-fA-F0-9]{40}$", parts[0])) {
-				Main.error("Invalid SHA hash: " + parts[0]);
+				Main.error("Invalid SHA hash: " + parts[0], s.lineNumber());
 			}
-			SIZE_LINTER.accept(parts[1], config);
+			SIZE_LINTER.accept(new Line(parts[1], s.lineNumber()), config);
 		});
 	};
 	protected static final FieldLinter SHA256_LINTER = (s, config) -> {
-		String[] lines = s.split("\n");
+		String[] lines = s.text().split("\n");
 		if(config.leadingEmptyLine && !lines[0].isBlank()) {
-			Main.error("The first line of checksums should be empty", "leadingEmptyLine");
+			Main.error("The first line of checksums should be empty", "leadingEmptyLine", s.lineNumber());
 		}
 		Arrays.stream(lines).filter(s1 -> !s1.isBlank()).map(String::strip).forEachOrdered(l -> {
 			String[] parts = l.split(" ", 3);
 			if(parts.length < 3) {
-				Main.error("Missing parameter; 3 values required: " + l);
+				Main.error("Missing parameter; 3 values required: " + l, s.lineNumber());
 				return;
 			}
 			if(!Pattern.matches("^[a-fA-F0-9]{64}$", parts[0])) {
-				Main.error("Invalid SHA hash: " + parts[0]);
+				Main.error("Invalid SHA hash: " + parts[0], s.lineNumber());
 			}
-			SIZE_LINTER.accept(parts[1], config);
+			SIZE_LINTER.accept(new Line(parts[1], s.lineNumber()), config);
 		});
 	};
 	protected static final FieldLinter STANDARDS_VERSION_LINTER = (s, config) -> {
-		String[] parts = s.split("\\.");
+		String[] parts = s.text().split("\\.");
 		int[] latest = {4, 6, 2, 1};
 		if(parts.length < 3 || parts.length > 4) {
-			Main.error("Invalid standards version: " + s);
+			Main.error("Invalid standards version: " + s, s.lineNumber());
 		} else {
 			try {
 				int[] values = Arrays.stream(parts).mapToInt(Integer::parseInt).toArray();
 				if(config.strictStandardsVersion) {
 					for(int i = 0; i < values.length; i++) {
 						if(values[i] > latest[i]) {
-							Main.error("Invalid standards version: " + s, "strictStandardsVersion");
+							Main.error("Invalid standards version: " + s, "strictStandardsVersion", s.lineNumber());
 						} else if(values[i] < latest[i]) {
 							break;
 						}
 					}
 				}
 			} catch(NumberFormatException e) {
-				Main.error("Invalid standards version: " + s);
+				Main.error("Invalid standards version: " + s, s.lineNumber());
 			}
 		}
 	};
@@ -566,12 +566,12 @@ class Linters {
 				HashSet<String> localHashes = new HashSet<>(files);
 				Arrays.stream(field.data().split("\\n")).map(String::strip).filter(f -> !f.isEmpty()).map(f -> List.of(f.split(" ")).getLast()).forEachOrdered(f -> {
 					if(!localHashes.contains(f)) {
-						Main.error("Checksummed file is not in file list, or is already checksummed: " + f, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256");
+						Main.error("Checksummed file is not in file list, or is already checksummed: " + f, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#checksums-sha1-and-checksums-sha256", field.line());
 					}
 					localHashes.remove(f);
 				});
 				if(!localHashes.isEmpty()) {
-					Main.error("File is not in checksum list: " + String.join(", ", localHashes));
+					Main.error("File is not in checksum list: " + String.join(", ", localHashes), field.line());
 				}
 			}
 		}
@@ -588,7 +588,7 @@ class Linters {
 					if(parts[1].contains(")")) {
 						String sourceVersion = parts[1].split("\\)", 2)[0];
 						if(sourceVersion.equals(version.data())) {
-							Main.error("Please omit the source version when the Version field is used with the same value: " + source.data(), "sourceRedundantVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#source");
+							Main.error("Please omit the source version when the Version field is used with the same value: " + source.data(), "sourceRedundantVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#source", source.line());
 						}
 					}
 				}
@@ -606,7 +606,7 @@ class Linters {
 			for(String vcsField : vcsFields) {
 				if(s.getField(vcsField) != null) {
 					if(found) {
-						Main.error("Multiple VCS fields are declared: " + vcsField, "duplicateVcs", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+						Main.error("Multiple VCS fields are declared: " + vcsField, "duplicateVcs", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.getField(vcsField).line());
 					} else {
 						found = true;
 					}
@@ -627,108 +627,108 @@ class Linters {
 	protected static final FieldLinter UPSTREAM_VERSION_LINTER = (s, config) -> {
 		if(config.upstreamVersionStyle) {
 			Pattern upstream = Pattern.compile("^[0-9][A-Za-z0-9.+~\\-]*$");
-			if(!upstream.matcher(s).matches()) {
-				Main.error("Upstream version uses an invalid format: " + s, "upstreamVersionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
+			if(!upstream.matcher(s.text()).matches()) {
+				Main.error("Upstream version uses an invalid format: " + s, "upstreamVersionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter FORMAT_VERSION_LINTER = (s, config) -> {
 		if(config.checkedType == ControlType.CHANGES) {
 			UPSTREAM_VERSION_LINTER.accept(s, config);
-			if(config.exactFormatVersion && !s.equals("1.8")) {
-				Main.error("Please use format version 1.8: " + s, "exactFormatVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#format");
+			if(config.exactFormatVersion && !s.text().equals("1.8")) {
+				Main.error("Please use format version 1.8: " + s, "exactFormatVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#format", s.lineNumber());
 			}
 		} else if(config.checkedType == ControlType.SOURCE_CONTROL) {
 			String[] supported = {"1.0", "3.0 (native)", "3.0 (quilt)"};
-			if(!Pattern.matches("^\\d+\\.\\d+( \\([a-zA-Z0-9]+\\))?$", s)) {
-				Main.error("Invalid format version: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#format");
+			if(!Pattern.matches("^\\d+\\.\\d+( \\([a-zA-Z0-9]+\\))?$", s.text())) {
+				Main.error("Invalid format version: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#format", s.lineNumber());
 			}
 			if(config.exactFormatVersion) {
-				if(Arrays.stream(supported).noneMatch(a -> a.equals(s))) {
-					Main.error("Unsupported format version: " + s, "exactFormatVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#format");
+				if(Arrays.stream(supported).noneMatch(a -> a.equals(s.text()))) {
+					Main.error("Unsupported format version: " + s, "exactFormatVersion", "https://www.debian.org/doc/debian-policy/ch-controlfields#format", s.lineNumber());
 				}
 			}
 		}
 	};
 	protected static final FieldLinter URGENCY_LINTER = (s, config) -> {
 		String[] urgencies = {"low", "medium", "high", "emergency", "critical"};
-		String[] parts = s.split(" ", 2);
+		String[] parts = s.text().split(" ", 2);
 		if(config.customUrgencies && Arrays.stream(urgencies).noneMatch(a -> a.equalsIgnoreCase(parts[0]))) {
-			Main.error("Unknown urgency level: " + parts[0], "customUrgencies", "https://www.debian.org/doc/debian-policy/ch-controlfields#urgency");
+			Main.error("Unknown urgency level: " + parts[0], "customUrgencies", "https://www.debian.org/doc/debian-policy/ch-controlfields#urgency", s.lineNumber());
 		}
 		if(parts.length > 1) {
 			if(config.urgencyDescriptionParentheses && (!parts[1].startsWith("(") || !parts[1].endsWith(")"))) {
-				Main.error("Urgency commentary should be wrapped in parentheses: " + s, "urgencyDescriptionParentheses", "https://www.debian.org/doc/debian-policy/ch-controlfields#urgency");
+				Main.error("Urgency commentary should be wrapped in parentheses: " + s, "urgencyDescriptionParentheses", "https://www.debian.org/doc/debian-policy/ch-controlfields#urgency", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter URL_LINTER = (s, config) -> {
 		try {
-			URL u = new URI(s).toURL();
-			checkUrl(u, config);
+			URL u = new URI(s.text()).toURL();
+			checkUrl(u, s.lineNumber(), config);
 		} catch(URISyntaxException | MalformedURLException | IllegalArgumentException e) {
 			if(config.url) {
-				Main.error("Invalid URL: " + s, "url");
+				Main.error("Invalid URL: " + s, "url", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter GIT_VCS_LINTER = (s, config) -> {
-		String[] parts = s.split(" ", 2);
+		String[] parts = s.text().split(" ", 2);
 		String url = parts[0];
-		URL_LINTER.accept(url, config);
+		URL_LINTER.accept(new Line(url, s.lineNumber()), config);
 		if(parts.length == 2) {
 			// there is a branch or path defined
 			if(parts[1].startsWith("-b")) {
 				String[] params = parts[1].split(" ", 3);
 				if(params.length < 2) {
-					Main.error("Incomplete branch definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+					Main.error("Incomplete branch definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 				} else {
 					// params[0] == -b
 					// params[1] == <branch-name>
 					// params[2] == [path] | missing
 					if(params[1].isEmpty()) {
-						Main.error("Empty branch name: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+						Main.error("Empty branch name: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 					}
 					if(params.length == 3) {
 						String path = params[2].strip();
 						if(!path.startsWith("[") || !path.endsWith("]")) {
-							Main.error("Invalid path definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+							Main.error("Invalid path definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 						}
 					}
 				}
 			} else if(parts[1].startsWith("[")) {
 				// otherwise, check for path
 				if(!parts[1].endsWith("]")) {
-					Main.error("Invalid path definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+					Main.error("Invalid path definition for Git: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 				}
 			} else {
-				Main.error("Invalid git data: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+				Main.error("Invalid git data: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 			}
 		} else if(config.vcsBranch) {
-			Main.error("Missing branch definition for Git: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+			Main.error("Missing branch definition for Git: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter MERCURIAL_VCS_LINTER = (s, config) -> {
-		String[] parts = s.split(" ", 2);
+		String[] parts = s.text().split(" ", 2);
 		String url = parts[0];
-		URL_LINTER.accept(url, config);
+		URL_LINTER.accept(new Line(url, s.lineNumber()), config);
 		if(parts.length == 2) {
 			// there is a branch defined
 			if(parts[1].startsWith("-b")) {
 				String[] params = parts[1].split(" ");
 				if(params.length != 2) {
-					Main.error("Incomplete branch definition for Mercurial: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+					Main.error("Incomplete branch definition for Mercurial: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 				}
 			}
 		} else if(config.vcsBranch) {
-			Main.error("Missing branch definition for Mercurial: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields");
+			Main.error("Missing branch definition for Mercurial: " + s, "vcsBranch", "https://www.debian.org/doc/debian-policy/ch-controlfields#s-f-vcs-fields", s.lineNumber());
 		}
 	};
 	protected static final FieldLinter COPYRIGHT_FORMAT_LINTER = (s, config) -> {
 		URL_LINTER.accept(s, config);
 		if(config.strictCopyrightFormatVersion) {
-			if(!s.equals("https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/")) {
-				Main.error("Unknown copyright format: " + s, "strictCopyrightFormatVersion", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#format-field");
+			if(!s.text().equals("https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/")) {
+				Main.error("Unknown copyright format: " + s, "strictCopyrightFormatVersion", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#format-field", s.lineNumber());
 			}
 		}
 	};
@@ -737,13 +737,13 @@ class Linters {
 			try {
 				URL_LINTER.accept(s, config);
 			} catch(IllegalArgumentException e) {
-				Main.error("Invalid copyright source URL: " + s, "copyrightSourceStyle", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#source-field");
+				Main.error("Invalid copyright source URL: " + s, "copyrightSourceStyle", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#source-field", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter VERSION_LINTER = (s, config) -> {
 		if(config.versionStyle) {
-			String[] epochSplit = s.split(":", 2);
+			String[] epochSplit = s.text().split(":", 2);
 			String epoch = epochSplit.length == 2 ? epochSplit[0] : "0";
 			String remaining = epochSplit.length == 2 ? epochSplit[1] : epochSplit[0];
 			String[] revisionSplit = remaining.split("-(?=[^-]+$)", 2);
@@ -751,24 +751,24 @@ class Linters {
 			String debianRevision = revisionSplit.length == 2 ? revisionSplit[1] : "0";
 			if(epoch != null) {
 				if(epoch.startsWith("+")) {
-					Main.error("Epoch must not have a sign: " + s, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
+					Main.error("Epoch must not have a sign: " + s, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version", s.lineNumber());
 				} else {
 					try {
 						Integer.parseUnsignedInt(epoch);
 					} catch(NumberFormatException e) {
-						Main.error("Epoch must be an unsigned integer: " + s, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
+						Main.error("Epoch must be an unsigned integer: " + s, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version", s.lineNumber());
 					}
 				}
 			}
-			UPSTREAM_VERSION_LINTER.accept(upstreamVersion, config);
+			UPSTREAM_VERSION_LINTER.accept(new Line(upstreamVersion, s.lineNumber()), config);
 			Pattern debian = Pattern.compile("^[A-Za-z0-9.+~]+$");
 			if(!debian.matcher(debianRevision).matches()) {
-				Main.error("Debian version uses an invalid format: " + debianRevision, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version");
+				Main.error("Debian version uses an invalid format: " + debianRevision, "versionStyle", "https://www.debian.org/doc/debian-policy/ch-controlfields#version", s.lineNumber());
 			}
 		}
 	};
 	protected static final FieldLinter DEPENDENCY_LINTER = (s, config) -> {
-		String[] packages = s.split("[|,]");
+		String[] packages = s.text().split("[|,]");
 		String[] operators = {"<<", "<=", "=", ">=", ">>"};
 		for(String aPackage : packages) {
 			aPackage = aPackage.strip();
@@ -778,60 +778,60 @@ class Linters {
 			if(begin != -1 && end != -1 && begin + 1 < end) {
 				String version = aPackage.substring(begin + 1, end).strip();
 				if(version.isEmpty()) {
-					Main.error("Empty package version string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html");
+					Main.error("Empty package version string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html", s.lineNumber());
 				} else {
 					boolean found = false;
 					for(String operator : operators) {
 						if(version.startsWith(operator)) {
-							VERSION_LINTER.accept(version.substring(operator.length()).strip(), config);
+							VERSION_LINTER.accept(new Line(version.substring(operator.length()).strip(), s.lineNumber()), config);
 							found = true;
 							break;
 						}
 					}
 					if(!found) {
-						Main.error("Invalid relation for package version: " + version, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html");
+						Main.error("Invalid relation for package version: " + version, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html", s.lineNumber());
 					}
 				}
 			} else if(begin != end) {
-				Main.error("Incomplete package version string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html");
+				Main.error("Incomplete package version string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html", s.lineNumber());
 			} else {
 				// arch config
 				begin = aPackage.indexOf('[');
 				end = aPackage.lastIndexOf(']');
 				if(begin != -1 && end != -1 && begin + 1 < end) {
-					ARCHITECTURE_LINTER.accept(aPackage.substring(begin + 1, end).strip(), config);
+					ARCHITECTURE_LINTER.accept(new Line(aPackage.substring(begin + 1, end).strip(), s.lineNumber()), config);
 				} else if(begin != end) {
-					Main.error("Incomplete architecture specification string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html");
+					Main.error("Incomplete architecture specification string: " + s, null, "https://www.debian.org/doc/debian-policy/ch-relationships.html", s.lineNumber());
 				}
 				// package name
 				String name = aPackage.split("[(\\[\\s]", 2)[0].strip();
-				PACKAGE_NAME_LINTER.accept(name, config);
+				PACKAGE_NAME_LINTER.accept(new Line(name, s.lineNumber()), config);
 			}
 		}
 	};
 	protected static final FieldLinter EXACT_DEPENDENCY_LINTER = (s, config) -> {
 		String[] forbidden_operators = {"<<", "<=", ">=", ">>"};
 		for(String op : forbidden_operators) {
-			if(s.contains(op)) {
-				Main.error("Only exact package versions can be provided: " + s);
+			if(s.text().contains(op)) {
+				Main.error("Only exact package versions can be provided: " + s, s.lineNumber());
 			}
 		}
 		DEPENDENCY_LINTER.accept(s, config);
 	};
 	protected static final FieldLinter SOURCE_LINTER = (s, config) -> {
-		String[] parts = s.split("\\(", 2);
-		PACKAGE_NAME_LINTER.accept(parts[0].stripTrailing(), config);
+		String[] parts = s.toString().split("\\(", 2);
+		PACKAGE_NAME_LINTER.accept(new Line(parts[0].stripTrailing(), s.lineNumber()), config);
 		if(parts.length == 2) {
 			if(config.checkedType == ControlType.SOURCE_PACKAGE_CONTROL || config.checkedType == ControlType.SOURCE_CONTROL) {
-				Main.error("debian/control and .dsc files cannot have a version in their source: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#source");
+				Main.error("debian/control and .dsc files cannot have a version in their source: " + s, null, "https://www.debian.org/doc/debian-policy/ch-controlfields#source", s.lineNumber());
 			}
 			String version = parts[1].substring(0, parts.length - 1);
-			VERSION_LINTER.accept(version, config);
+			VERSION_LINTER.accept(new Line(version, s.lineNumber()), config);
 		}
 	};
 	private static final StanzaLinter STANZA_COPYRIGHT_HEADER_LINTER = (s, config) -> {
 		if(s.getField("Copyright") != null && s.getField("License") == null) {
-			Main.error("A Copyright field alone is not sufficient; please include a License field as well when an explanation is needed: Copyright", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#header-stanza");
+			Main.error("A Copyright field alone is not sufficient; please include a License field as well when an explanation is needed: Copyright", null, "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#header-stanza", s.getField("Copyright").line());
 		}
 	};
 
@@ -997,12 +997,13 @@ class Linters {
 	 * Checks that a URL is valid and whether it is reachable.
 	 *
 	 * @param u      The URL to check
+	 * @param line   The line number the URL is on
 	 * @param config The configuration options
 	 */
-	private static void checkUrl(URL u, Configuration config) {
+	private static void checkUrl(URL u, int line, Configuration config) {
 		if(config.urlForceHttps) {
 			if(!"https".equals(u.getProtocol())) {
-				Main.error("URL does not use HTTPS: " + u, "urlForceHttps");
+				Main.error("URL does not use HTTPS: " + u, "urlForceHttps", line);
 			}
 		}
 		if(config.urlExists) {
@@ -1014,13 +1015,13 @@ class Linters {
 					http.setInstanceFollowRedirects(true);
 					http.connect();
 					if(http.getResponseCode() < 200 || http.getResponseCode() >= 300) {
-						Main.error("URL returned invalid response code (HTTP " + http.getResponseCode() + "): " + u, "urlExists");
+						Main.error("URL returned invalid response code (HTTP " + http.getResponseCode() + "): " + u, "urlExists", line);
 					}
 				} else {
 					conn.connect();
 				}
 			} catch(IOException e) {
-				Main.error("URL not found: " + u, "urlExists");
+				Main.error("URL not found: " + u, "urlExists", line);
 			}
 		}
 	}
@@ -1085,9 +1086,9 @@ class Linters {
 							if(!names.remove(shortName)) {
 								boolean optional = optionalNames.remove(shortName);
 								if(config.licenseDeclaredAfterExplanation && optional) {
-									Main.error("Stand-alone license stanza is not required; this license has an explanation: " + shortName, "licenseDeclaredAfterExplanation");
+									Main.error("Stand-alone license stanza is not required; this license has an explanation: " + shortName, "licenseDeclaredAfterExplanation", license.line());
 								} else if(!optional) {
-									Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations");
+									Main.error("Stand-alone license stanza is not required; maybe the license was already defined: " + shortName, "licenseDeclarations", license.line());
 								}
 							}
 						}
@@ -1140,9 +1141,9 @@ class Linters {
 								for(int i2 = i1 + 1; i2 < currentPatterns.size(); i2++) {
 									String pat2 = currentPatterns.get(i2);
 									if(config.duplicateFilePattern && normalizePattern(pat2).equals(normalized)) {
-										Main.error("Duplicate file pattern: " + pat1 + " and " + pat2, "duplicateFilePattern");
+										Main.error("Duplicate file pattern: " + pat1 + " and " + pat2, "duplicateFilePattern", field.line());
 									} else if(config.redundantFilePattern && (isMoreGeneric(pat1, pat2) || isMoreGeneric(pat2, pat1))) {
-										Main.error("File stanza includes redundant pattern: " + pat1 + " and " + pat2 + " cannot both be needed", "redundantFilePattern");
+										Main.error("File stanza includes redundant pattern: " + pat1 + " and " + pat2 + " cannot both be needed", "redundantFilePattern", field.line());
 									}
 								}
 							}
@@ -1150,7 +1151,7 @@ class Linters {
 						previousPatterns.parallelStream().forEach(previous -> {
 							for(String current : currentPatterns) {
 								if(isMoreGeneric(current, previous)) {
-									Main.error("More generic patterns should precede specific ones: " + previous + " and " + current, "copyrightFilePatternGenerality", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field");
+									Main.error("More generic patterns should precede specific ones: " + previous + " and " + current, "copyrightFilePatternGenerality", "https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/#files-field", field.line());
 								}
 							}
 						});

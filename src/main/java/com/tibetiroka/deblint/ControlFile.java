@@ -16,10 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -81,7 +78,7 @@ public class ControlFile {
 					if(config.fieldNameCapitalization && !name.equals(field.name())) {
 						Main.error("Field name is not properly capitalized: " + field.name(), "fieldNameCapitalization");
 					}
-					fieldSpec.linter().accept(field.data(), config);
+					fieldSpec.linter().accept(new Line(field.data(), field.line()), config);
 				}
 			});
 			spec.linter().accept(stanza, config);
@@ -124,7 +121,7 @@ public class ControlFile {
 				} else {
 					text += " (attempted matching with: " + String.join(", ", attempted.stream().map(StanzaSpec::name).toList()) + ")";
 				}
-				Main.error(text);
+				Main.error(text, stanza.getFirstLine());
 				StanzaSpec spec = new StanzaSpec("blank stanza", false, false, new HashMap<>(), (a, b) -> {
 				});
 				usedSpecs.add(spec);
@@ -182,28 +179,37 @@ public class ControlFile {
 	/**
 	 * Parses the data from the lines of the target file. Most users should use {@link #parse()} instead.
 	 *
-	 * @param lines The lines to parse
+	 * @param text The lines to parse
 	 */
-	protected void parse(List<String> lines) {
+	protected void parse(List<String> text) {
 		if(!stanzas.isEmpty()) {
 			throw new IllegalStateException("Cannot parse control file: there is already content parsed");
 		}
-		if(lines.isEmpty()) {
+		if(text.isEmpty()) {
 			throw new IllegalArgumentException("Control file is empty");
 		}
-		lines = new ArrayList<>(lines);
+		List<Line> lines = new ArrayList<>();
+		for(int i = 0; i < text.size(); i++) {
+			lines.add(new Line(text.get(i), i + 1));
+		}
 		// remove PGP signature
 		if(config.checkedType.isSupportsPgp()) {
-			if(lines.getFirst().equals("-----BEGIN PGP SIGNED MESSAGE-----")) {
+			if(lines.getFirst().text().equals("-----BEGIN PGP SIGNED MESSAGE-----")) {
 				lines.removeFirst();
 				DataField field = DataField.parseNext(lines, config);
 				if(field == null || !field.name().equalsIgnoreCase("Hash")) {
 					throw new IllegalArgumentException("Unrecognized PGP signature format");
 				}
-				while(!lines.isEmpty() && lines.getFirst().isBlank()) {
+				while(!lines.isEmpty() && lines.getFirst().text().isBlank()) {
 					lines.removeFirst();
 				}
-				int end = lines.indexOf("-----BEGIN PGP SIGNATURE-----");
+				int end = -1;
+				for(int i = 0; i < lines.size(); i++) {
+					if(lines.get(i).text().equals("-----BEGIN PGP SIGNATURE-----")) {
+						end = i;
+						break;
+					}
+				}
 				if(end == -1) {
 					throw new IllegalArgumentException("PGP signature is not present");
 				}
@@ -214,24 +220,35 @@ public class ControlFile {
 		if(lines.isEmpty()) {
 			throw new IllegalArgumentException("Control file only contains a PGP signature");
 		}
-		if(lines.removeIf(line -> line.startsWith("#"))) {
-			if(config.comments && config.checkedType != ControlType.SOURCE_PACKAGE_CONTROL) {
-				Main.error("Comments are only allowed in debian/control files", "comments", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+		// remove comments
+		{
+			ListIterator<Line> iterator = lines.listIterator();
+			while(iterator.hasNext()) {
+				Line line = iterator.next();
+				if(line.text().startsWith("#")) {
+					iterator.remove();
+					if(config.comments && config.checkedType != ControlType.SOURCE_PACKAGE_CONTROL) {
+						Main.error("Comments are only allowed in debian/control files", "comments", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", line.lineNumber());
+					}
+				}
 			}
 		}
+		// remove trailing spaces
 		if(config.trailingSpace) {
 			Pattern trailingSpace = Pattern.compile("[ \\t]$");
 			lines.forEach(s -> {
-				if(trailingSpace.matcher(s).matches()) {
-					Main.error("Line has trailing whitespace: " + s.strip());
+				if(trailingSpace.matcher(s.text()).matches()) {
+					Main.error("Line has trailing whitespace: " + s.text().strip(), s.lineNumber());
 				}
 			});
 		}
+		// parse stanzas
 		Pattern empty = Pattern.compile("^[ \\t]+$");
 		while(!lines.isEmpty()) {
-			while(!lines.isEmpty() && empty.matcher(lines.getFirst()).matches()) {
-				if(!lines.removeFirst().isEmpty() && config.emptyStanzaSeparators) {
-					Main.error("Stanza separator contains whitespaces: should be empty", "emptyStanzaSeparators", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files");
+			while(!lines.isEmpty() && empty.matcher(lines.getFirst().text()).matches()) {
+				Line separator = lines.removeFirst();
+				if(!separator.text().isEmpty() && config.emptyStanzaSeparators) {
+					Main.error("Stanza separator contains whitespaces: should be empty", "emptyStanzaSeparators", "https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files", separator.lineNumber());
 				}
 			}
 			if(!lines.isEmpty()) {
