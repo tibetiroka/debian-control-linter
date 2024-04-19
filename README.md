@@ -48,14 +48,6 @@ Some errors cannot be disabled, not even with the `quirks` preset. Generally, th
 
 As this linter only processes the control file, it is not possible to check for errors across files, such as files without copyright notice or missing entries from a file list.
 
-Error messages are also sometimes ambiguous.
-
-```yml
-License: Unsplash License
-```
-
-in a `debian/copyright` file will yield the error `Invalid license exception: Unsplash License`, which is not the most intuitive. (The solution is to use a custom, single-word short name for the license, since license names are not allowed to contain spaces.)
-
 URLs using a scheme other than HTTP/HTTPS may be misreported as invalid.
 
 ## System Requirements and Building
