@@ -16,7 +16,7 @@
 
 	<groupId>com.tibetiroka</groupId>
 	<artifactId>debian-control-linter</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 
 	<properties>
 		<mainClass>com.tibetiroka.deblint.Main</mainClass>
