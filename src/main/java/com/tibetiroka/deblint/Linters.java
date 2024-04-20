@@ -381,7 +381,7 @@ class Linters {
 		}
 	};
 	protected static final FieldLinter SECTION_LINTER = (s, config) -> {
-		String[] areas = {"contrib", "non-free"};
+		String[] areas = {"contrib", "non-free", "non-free-firmware"};
 		String[] sections = {"admin", "cli-mono", "comm", "database", "debian-installer", "debug", "devel", "doc", "editors", "education", "electronics", "embedded", "fonts", "games", "gnome", "gnu-r", "gnustep", "graphics", "hamradio", "haskell", "httpd", "interpreters", "introspection", "java", "javascript", "kde", "kernel", "libdevel", "libs", "lisp", "localization", "mail", "math", "metapackages", "misc", "net", "news", "ocaml", "oldlibs", "otherosfs", "perl", "php", "python", "ruby", "rust", "science", "shells", "sound", "tasks", "tex", "text", "utils", "vcs", "video", "web", "x11", "xfce", "zope"};
 		String section;
 		if(s.text().contains("/")) {
@@ -531,7 +531,7 @@ class Linters {
 	};
 	protected static final FieldLinter STANDARDS_VERSION_LINTER = (s, config) -> {
 		String[] parts = s.text().split("\\.");
-		int[] latest = {4, 6, 2, 1};
+		int[] latest = {4, 7, 0, 0};
 		if(parts.length < 3 || parts.length > 4) {
 			Main.error("Invalid standards version: " + s, s.lineNumber());
 		} else {
@@ -950,14 +950,14 @@ class Linters {
 			map.put("Format", new FieldSpec(MANDATORY, SIMPLE, FORMAT_VERSION_LINTER));
 			map.put("Date", new FieldSpec(MANDATORY, SIMPLE, DATE_LINTER));
 			map.put("Source", new FieldSpec(MANDATORY, SIMPLE, SOURCE_LINTER));
-			map.put("Binary", new FieldSpec(MANDATORY, FOLDED, BINARY_LIST_LINTER));
+			map.put("Binary", new FieldSpec(OPTIONAL, FOLDED, BINARY_LIST_LINTER));
 			map.put("Architecture", new FieldSpec(OPTIONAL, SIMPLE, SINGLE_ARCHITECTURE_LINTER));
 			map.put("Version", new FieldSpec(MANDATORY, SIMPLE, VERSION_LINTER));
 			map.put("Distribution", new FieldSpec(MANDATORY, SIMPLE, DISTRIBUTION_LINTER));
 			map.put("Urgency", new FieldSpec(RECOMMENDED, SIMPLE, URGENCY_LINTER));
 			map.put("Maintainer", new FieldSpec(MANDATORY, SIMPLE, ADDRESS_LINTER));
 			map.put("Changed-By", new FieldSpec(OPTIONAL, SIMPLE, ADDRESS_LINTER));
-			map.put("Description", new FieldSpec(RECOMMENDED, MULTILINE, DESCRIPTION_LINTER));
+			map.put("Description", new FieldSpec(OPTIONAL, MULTILINE, DESCRIPTION_LINTER));
 			map.put("Closes", new FieldSpec(OPTIONAL, SIMPLE, NUMBER_LIST_LINTER));
 			map.put("Changes", new FieldSpec(MANDATORY, MULTILINE, CHANGE_LIST_LINTER));
 			map.put("Checksums-Sha1", new FieldSpec(MANDATORY, MULTILINE, SHA1_LINTER));
