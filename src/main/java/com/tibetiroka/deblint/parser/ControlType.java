@@ -8,7 +8,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.tibetiroka.deblint;
+package com.tibetiroka.deblint.parser;
+
+import com.tibetiroka.deblint.linter.FileLinter;
+import com.tibetiroka.deblint.linter.Linters;
 
 import java.util.List;
 

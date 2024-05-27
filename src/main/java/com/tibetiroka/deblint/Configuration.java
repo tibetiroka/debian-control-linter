@@ -10,6 +10,8 @@
 
 package com.tibetiroka.deblint;
 
+import com.tibetiroka.deblint.parser.ControlType;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

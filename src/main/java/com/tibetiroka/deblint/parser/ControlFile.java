@@ -8,7 +8,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.tibetiroka.deblint;
+package com.tibetiroka.deblint.parser;
+
+import com.tibetiroka.deblint.Configuration;
+import com.tibetiroka.deblint.Main;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -181,7 +184,7 @@ public class ControlFile {
 	 *
 	 * @param text The lines to parse
 	 */
-	protected void parse(List<String> text) {
+	public void parse(List<String> text) {
 		if(!stanzas.isEmpty()) {
 			throw new IllegalStateException("Cannot parse control file: there is already content parsed");
 		}

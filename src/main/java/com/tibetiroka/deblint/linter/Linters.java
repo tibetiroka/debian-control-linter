@@ -8,8 +8,11 @@
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.tibetiroka.deblint;
+package com.tibetiroka.deblint.linter;
 
+import com.tibetiroka.deblint.Configuration;
+import com.tibetiroka.deblint.Main;
+import com.tibetiroka.deblint.parser.*;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 
@@ -22,17 +25,17 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import static com.tibetiroka.deblint.FieldSpec.RequirementStatus.MANDATORY;
-import static com.tibetiroka.deblint.FieldSpec.RequirementStatus.OPTIONAL;
-import static com.tibetiroka.deblint.FieldSpec.RequirementStatus.RECOMMENDED;
-import static com.tibetiroka.deblint.FieldType.FOLDED;
-import static com.tibetiroka.deblint.FieldType.MULTILINE;
-import static com.tibetiroka.deblint.FieldType.SIMPLE;
+import static com.tibetiroka.deblint.parser.FieldSpec.RequirementStatus.MANDATORY;
+import static com.tibetiroka.deblint.parser.FieldSpec.RequirementStatus.OPTIONAL;
+import static com.tibetiroka.deblint.parser.FieldSpec.RequirementStatus.RECOMMENDED;
+import static com.tibetiroka.deblint.parser.FieldType.FOLDED;
+import static com.tibetiroka.deblint.parser.FieldType.MULTILINE;
+import static com.tibetiroka.deblint.parser.FieldType.SIMPLE;
 
 /**
  * A collection of linters and presets for various control file types.
  */
-class Linters {
+public class Linters {
 	/**
 	 * Specification preset for {@link ControlType#CHANGES}.
 	 */
@@ -53,6 +56,7 @@ class Linters {
 	 * Specification preset for {@link ControlType#SOURCE_CONTROL}.
 	 */
 	public static final List<StanzaSpec> SOURCE_CONTROL_STANZAS = new ArrayList<>();
+	public static final FileLinter TYPE_COPYRIGHT_LINTER = new TypeCopyrightLinter();
 	/**
 	 * The list of supported architectures, according to dpkg-architecteure 1.21.1
 	 */
@@ -623,7 +627,6 @@ class Linters {
 		STANZA_SOURCE_LINTER.accept(s, config);
 		STANZA_CHECKSUM_LINTER.accept(s, config);
 	};
-	protected static final FileLinter TYPE_COPYRIGHT_LINTER = new TypeCopyrightLinter();
 	protected static final FieldLinter UPSTREAM_VERSION_LINTER = (s, config) -> {
 		if(config.upstreamVersionStyle) {
 			Pattern upstream = Pattern.compile("^[0-9][A-Za-z0-9.+~\\-]*$");

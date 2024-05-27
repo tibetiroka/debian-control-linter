@@ -8,9 +8,11 @@
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.tibetiroka.deblint;
+package com.tibetiroka.deblint.parser;
 
-import java.util.function.BiConsumer;
-
-public interface FileLinter extends BiConsumer<ControlFile, Configuration> {
+/**
+ * The types of a field, as described in the <a href="https://www.debian.org/doc/debian-policy/ch-controlfields#syntax-of-control-files">standard</a>.
+ */
+public enum FieldType {
+	SIMPLE, FOLDED, MULTILINE
 }

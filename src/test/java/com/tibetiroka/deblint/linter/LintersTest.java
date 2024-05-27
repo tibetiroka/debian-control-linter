@@ -8,8 +8,11 @@
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.tibetiroka.deblint;
+package com.tibetiroka.deblint.linter;
 
+import com.tibetiroka.deblint.Configuration;
+import com.tibetiroka.deblint.parser.ControlType;
+import com.tibetiroka.deblint.parser.Line;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
