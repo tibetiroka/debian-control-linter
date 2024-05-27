@@ -383,7 +383,7 @@ public class Configuration implements Cloneable {
 		public static final String duplicateFiles = "Duplicate entry in a file list.";
 		public static final String duplicateIssueNumbers = "A Closes field with repeated issue numbers.";
 		public static final String duplicatePackages = "Duplicate entry in a package list.";
-		public static final String duplicateVcs = "More than one version control filed declared.";
+		public static final String duplicateVcs = "More than one version control fields declared.";
 		public static final String email = "An email address with an invalid format.";
 		public static final String emptyFields = "Fields with no value specified.";
 		public static final String emptyStanzaSeparators = "Stanza separators that contain whitespaces.";
