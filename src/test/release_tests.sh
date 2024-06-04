@@ -31,7 +31,7 @@ if [ "$release_version" != "$version" ]; then
 fi
 
 # Verify that the version specified is the latest
-latest=`echo -e "v${version}\\n${remote_tags}" | sort -t '.' -k1,1n -k2,2n -k3,3n | tail -n1`
+latest=`echo -e "${version}\\n${remote_tags}" | sort -t '.' -k1,1n -k2,2n -k3,3n | tail -n1`
 if [ "$latest" != "$version" ]; then
 	echo "Invalid release version: there is a newer release"
 	((error_count++))

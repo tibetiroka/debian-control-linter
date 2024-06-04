@@ -13,11 +13,12 @@ permissions:
 
 jobs:
   test_release:
+    name: Test release status
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run release tests
-        run: bash src/test/release_tests.java '{{ inputs.release_version }}'
+        run: bash src/test/release_tests.sh {{ inputs.release_version }}
 
   release_linux:
     name: Release - Linux
