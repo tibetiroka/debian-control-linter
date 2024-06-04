@@ -26,7 +26,7 @@ if [ "$releases_matching" -gt '0' ]; then
 	((error_count++))
 fi
 if [ "$release_version" != "$version" ]; then
-	echo "Invalid release version: doesn't match the specified version"
+	echo "Invalid release version: $version doesn't match the specified version $release_version"
 	((error_count++))
 fi
 
