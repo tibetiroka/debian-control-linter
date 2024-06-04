@@ -1,14 +1,24 @@
 name: Release CD
-
+# Compiles the native executable without needing a release. The executable has to be uploaded manually.
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: The release version to build
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
+  test_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run release tests
+        run: bash src/test/release_tests.java '{{ inputs.release_version }}'
+
   release_linux:
     name: Release - Linux
     runs-on: ubuntu-latest
@@ -27,26 +37,9 @@ jobs:
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Compile project
-        run: mvn -B package -Pnative,portable --file pom.xml
-      - name: Upload jars to release
-        uses: svenstaro/upload-release-action@v2
+        run: mvn -B package -Pnative --file pom.xml
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag: ${{ github.ref }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/*.jar
-          file_glob: true
-      - name: Upload manpage to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          tag: ${{ github.ref }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/debian-control-linter.1
-          file_glob: true
-      - name: Upload native executable to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          tag: ${{ github.ref }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/debian-control-linter
-          draft: true
-          file_glob: true
+          name: debian-control-linter
+          path: ./target/debian-control-linter
